@@ -7,6 +7,7 @@ Comprehensive documentation for deploying and configuring Clawdbot - a Claude-po
 ### Core Guides
 - **[Customer Setup Guide](clawdbot-customer-setup-guide.md)** - Complete 1,000+ line guide covering installation, configuration, and customization
 - **[Deployment Guide](clawdbot-deployment-guide.md)** - 8 platform deployment options with step-by-step instructions
+- **[Team Operations Guide](clawdbot-team-operations-guide.md)** - Multi-operator playbook for teams up to 10+ people
 
 ### Explainer Documents
 Located in `/DOCUMENTATION/`:
@@ -26,11 +27,24 @@ Located in `/DOCUMENTATION/`:
 | DigitalOcean | $6/mo | ❌ | ✅ | Simple VPS |
 | macOS VM (Lume) | $0 | ✅ | ✅ | Isolation |
 
+## Team Operations
+
+For teams managing Clawdbot deployments, the [Team Operations Guide](clawdbot-team-operations-guide.md) covers:
+
+- **Team Structure** - 4-tier role system (Owner → Operator → Moderator → Observer)
+- **Access Management** - Credential tiers and permission matrices
+- **Onboarding/Offboarding** - Checklists for team changes
+- **Daily Operations** - Health checks and shift handoffs
+- **Incident Response** - Severity levels S1-S4 with escalation paths
+- **Security Protocols** - Access control and monitoring requirements
+- **Communication Standards** - Channel structure and templates
+
 ## Quick Start
 
 1. Choose your platform from the [Deployment Guide](clawdbot-deployment-guide.md)
 2. Follow the [Customer Setup Guide](clawdbot-customer-setup-guide.md)
-3. Reference explainer docs for deeper understanding
+3. For team deployments, review the [Team Operations Guide](clawdbot-team-operations-guide.md)
+4. Reference explainer docs for deeper understanding
 
 ## About
 
