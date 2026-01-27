@@ -1,442 +1,402 @@
-# 🔷 Tailscale Explained
+# Tailscale - A Visual Guide
 
-> **Learning Context:** Created during Clawdbot deployment to understand mesh VPN networking for remote access.
+## TL;DR (What Is It?)
 
-## What is Tailscale?
+Tailscale is a **mesh VPN** that makes all your devices appear on the same private network, no matter where they are. Each device gets a unique IP address (like `100.64.0.1`) and can talk directly to any other device - even through firewalls and NATs - without any port forwarding or complex setup.
 
-Tailscale is a **mesh VPN** built on WireGuard that creates a secure private network between your devices. Unlike traditional VPNs, Tailscale creates **direct peer-to-peer encrypted connections** between devices with zero configuration.
+---
 
 ## The Core Concept
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    TAILSCALE vs TRADITIONAL VPN                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   TRADITIONAL VPN (Hub-and-Spoke):                                          │
-│   ════════════════════════════════                                          │
-│                                                                             │
-│                        ┌─────────────────┐                                  │
-│                        │   VPN SERVER    │                                  │
-│                        │  (Bottleneck!)  │                                  │
-│                        │   All traffic   │                                  │
-│                        │   goes through  │                                  │
-│                        └────────┬────────┘                                  │
-│                                 │                                           │
-│              ┌──────────────────┼──────────────────┐                        │
-│              │                  │                  │                        │
-│              ▼                  ▼                  ▼                        │
-│        ┌──────────┐      ┌──────────┐      ┌──────────┐                    │
-│        │ Device A │      │ Device B │      │ Device C │                    │
-│        └──────────┘      └──────────┘      └──────────┘                    │
-│                                                                             │
-│   ❌ Slow (all traffic routes through server)                              │
-│   ❌ Single point of failure                                               │
-│   ❌ Server sees all traffic                                               │
-│                                                                             │
-│   ─────────────────────────────────────────────────────────────────────     │
-│                                                                             │
-│   TAILSCALE MESH VPN (Peer-to-Peer):                                        │
-│   ══════════════════════════════════                                        │
-│                                                                             │
-│        ┌──────────┐◀══════════════════════▶┌──────────┐                    │
-│        │ Device A │      Direct P2P        │ Device B │                    │
-│        │100.64.0.1│      Connection        │100.64.0.2│                    │
-│        └────┬─────┘                        └─────┬────┘                    │
-│             │  ◀══════════════════════════════▶  │                         │
-│             │           Direct P2P               │                         │
-│             │                                    │                         │
-│             │      ┌────────────────────┐        │                         │
-│             │      │   Coordination     │        │                         │
-│             └─────▶│   Server (Control  │◀───────┘                         │
-│                    │   Plane ONLY)      │                                  │
-│                    └─────────┬──────────┘                                  │
-│                              │                                              │
-│                              ▼                                              │
-│                       ┌──────────┐                                          │
-│                       │ Device C │                                          │
-│                       │100.64.0.3│                                          │
-│                       └──────────┘                                          │
-│                                                                             │
-│   ✅ Fast (direct device-to-device)                                        │
-│   ✅ No bottleneck (mesh topology)                                         │
-│   ✅ Your data never touches Tailscale servers                             │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+TRADITIONAL VPN (Hub-and-Spoke):
+                    ┌─────────────────┐
+        ┌──────────▶│   VPN Server    │◀──────────┐
+        │           │  (bottleneck)   │           │
+        │           └─────────────────┘           │
+        │                   ▲                     │
+        │                   │                     │
+   ┌────┴────┐         ┌────┴────┐          ┌────┴────┐
+   │ Phone   │         │ Laptop  │          │ Server  │
+   └─────────┘         └─────────┘          └─────────┘
+   
+   All traffic goes through central server (slow, expensive)
+
+
+TAILSCALE (Mesh Network):
+   ┌─────────┐                              ┌─────────┐
+   │ Phone   │◀═══════════════════════════▶│ Server  │
+   │100.64.0.1                              │100.64.0.3
+   └────┬────┘                              └────┬────┘
+        │                                        │
+        │          ┌─────────┐                   │
+        └─────────▶│ Laptop  │◀──────────────────┘
+                   │100.64.0.2
+                   └─────────┘
+   
+   Direct peer-to-peer connections (fast, free)
 ```
 
-## How Tailscale Works
+**Key insight:** Tailscale devices talk directly to each other. There's no central server bottleneck - just encrypted tunnels between each pair of devices that need to communicate.
+
+---
+
+## How Tailscale Actually Works
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         TAILSCALE ARCHITECTURE                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   CONTROL PLANE (Tailscale's Servers) - Metadata Only                      │
-│   ════════════════════════════════════════════════════                      │
-│                                                                             │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │                     TAILSCALE COORDINATION                          │  │
-│   │                                                                     │  │
-│   │   Handles:                          Does NOT see:                   │  │
-│   │   • Authentication (SSO)            • Your actual data              │  │
-│   │   • Public key exchange             • Your traffic content          │  │
-│   │   • Device discovery                • Your files/messages           │  │
-│   │   • ACL rules                       • Your browsing                 │  │
-│   │   • NAT traversal help                                              │  │
-│   │                                                                     │  │
-│   │   ⚠️  ONLY METADATA - YOUR DATA NEVER PASSES THROUGH HERE ⚠️       │  │
-│   │                                                                     │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│   ─────────────────────────────────────────────────────────────────────     │
-│                                                                             │
-│   DATA PLANE (WireGuard - Device to Device) - Your Traffic                 │
-│   ══════════════════════════════════════════════════════                   │
-│                                                                             │
-│   ┌──────────────────┐                    ┌──────────────────┐             │
-│   │    Mac Mini      │                    │    MacBook       │             │
-│   │                  │                    │                  │             │
-│   │  ┌────────────┐  │    WireGuard       │  ┌────────────┐  │             │
-│   │  │ Tailscale  │  │    Encrypted       │  │ Tailscale  │  │             │
-│   │  │ Agent      │◀═╪════════════════════╪═▶│ Agent      │  │             │
-│   │  │            │  │    DIRECT P2P      │  │            │  │             │
-│   │  │ 100.64.0.1 │  │    Connection      │  │ 100.64.0.2 │  │             │
-│   │  └────────────┘  │                    │  └────────────┘  │             │
-│   │        │         │                    │        │         │             │
-│   │        ▼         │                    │        ▼         │             │
-│   │  ┌────────────┐  │                    │  ┌────────────┐  │             │
-│   │  │ Clawdbot   │  │                    │  │ Browser    │  │             │
-│   │  │ :18789     │  │                    │  │            │  │             │
-│   │  └────────────┘  │                    │  └────────────┘  │             │
-│   │                  │                    │                  │             │
-│   └──────────────────┘                    └──────────────────┘             │
-│                                                                             │
-│   Data flows DIRECTLY between your devices                                 │
-│   Encrypted with WireGuard (state-of-the-art cryptography)                │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TAILSCALE ARCHITECTURE                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│                    ☁️  CONTROL PLANE                                │
+│                    (Tailscale's servers)                            │
+│               ┌─────────────────────────┐                           │
+│               │  • Authentication       │                           │
+│               │  • Key exchange         │                           │
+│               │  • Device discovery     │                           │
+│               │  • Access control (ACLs)│                           │
+│               └───────────┬─────────────┘                           │
+│                           │                                         │
+│         ┌─────────────────┼─────────────────┐                       │
+│         │ metadata only   │   metadata only │                       │
+│         ▼                 ▼                 ▼                       │
+│    ┌─────────┐       ┌─────────┐       ┌─────────┐                  │
+│    │ Phone   │       │ Laptop  │       │ Server  │                  │
+│    └────┬────┘       └────┬────┘       └────┬────┘                  │
+│         │                 │                 │                       │
+│         │    🔒 DATA PLANE (WireGuard)      │                       │
+│         │    Direct encrypted connections   │                       │
+│         │◀═══════════════▶│◀═══════════════▶│                       │
+│         │                 │                 │                       │
+│    Your data NEVER touches Tailscale servers!                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## The Connection Process (NAT Traversal Magic)
+**Two separate planes:**
+1. **Control Plane** - Tailscale's servers handle coordination (who can talk to whom, key exchange)
+2. **Data Plane** - Your actual traffic flows directly between devices via WireGuard encryption
+
+---
+
+## NAT Traversal: The Magic Explained
+
+The hardest problem Tailscale solves is connecting devices behind NATs and firewalls.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    TAILSCALE NAT TRAVERSAL                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   THE PROBLEM: Both devices are behind NAT routers                         │
-│   ═══════════════════════════════════════════════                          │
-│                                                                             │
-│   ┌──────────────┐      ┌────────┐        ┌────────┐      ┌──────────────┐ │
-│   │   MacBook    │──────│  NAT   │────────│  NAT   │──────│   Mac Mini   │ │
-│   │ 192.168.1.50 │      │ Router │ PUBLIC │ Router │      │  10.0.0.100  │ │
-│   │              │      │        │INTERNET│        │      │              │ │
-│   └──────────────┘      └────────┘        └────────┘      └──────────────┘ │
-│                                                                             │
-│   Neither can directly reach the other's private IP!                       │
-│                                                                             │
-│   ─────────────────────────────────────────────────────────────────────     │
-│                                                                             │
-│   THE SOLUTION: NAT Hole Punching                                          │
-│   ═══════════════════════════════                                          │
-│                                                                             │
-│   STEP 1: Both devices register with Tailscale                             │
-│   ──────────────────────────────────────────────                           │
-│                                                                             │
-│   ┌──────────────┐                              ┌──────────────┐           │
-│   │   MacBook    │─────── "I'm here!" ─────────▶│  Tailscale   │           │
-│   │              │        Public IP: 1.2.3.4    │  Coordination│           │
-│   │              │        Port: 41641           │              │           │
-│   └──────────────┘                              │              │           │
-│                                                 │              │           │
-│   ┌──────────────┐                              │              │           │
-│   │   Mac Mini   │─────── "I'm here!" ─────────▶│              │           │
-│   │              │        Public IP: 5.6.7.8    │              │           │
-│   │              │        Port: 51820           │              │           │
-│   └──────────────┘                              └──────────────┘           │
-│                                                                             │
-│   STEP 2: Coordination server shares connection info                       │
-│   ──────────────────────────────────────────────────                       │
-│                                                                             │
-│   MacBook learns: "Mac Mini is at 5.6.7.8:51820"                           │
-│   Mac Mini learns: "MacBook is at 1.2.3.4:41641"                           │
-│                                                                             │
-│   STEP 3: Simultaneous connection (hole punching)                          │
-│   ─────────────────────────────────────────────────                        │
-│                                                                             │
-│   ┌──────────────┐                              ┌──────────────┐           │
-│   │   MacBook    │════════════════════════════▶│   Mac Mini   │           │
-│   │              │  Both send packets at the   │              │           │
-│   │              │◀════════════════════════════│              │           │
-│   └──────────────┘  same time - NAT routers    └──────────────┘           │
-│                     see "established" connection                           │
-│                     and allow traffic through!                             │
-│                                                                             │
-│   RESULT: Direct P2P connection established!                               │
-│   ════════════════════════════════════════════                             │
-│                                                                             │
-│   ─────────────────────────────────────────────────────────────────────     │
-│                                                                             │
-│   FALLBACK: DERP Relay (if direct fails)                                   │
-│   ══════════════════════════════════════                                   │
-│                                                                             │
-│   If NAT is too strict, traffic routes through Tailscale's DERP relays:   │
-│                                                                             │
-│   ┌──────────┐          ┌──────────────────┐          ┌──────────┐        │
-│   │ MacBook  │═════════▶│   DERP Relay     │═════════▶│ Mac Mini │        │
-│   │          │          │  (Encrypted!)    │          │          │        │
-│   │          │◀═════════│  Can't see data  │◀═════════│          │        │
-│   └──────────┘          └──────────────────┘          └──────────┘        │
-│                                                                             │
-│   Still end-to-end encrypted - DERP only sees encrypted blobs             │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+BEFORE TAILSCALE (NAT blocks incoming connections):
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  HOME NETWORK                                                       │
+│  ┌─────────────┐                                                   │
+│  │   Router    │ ◀───── ❌ BLOCKED ───── Incoming connection       │
+│  │   (NAT)     │        from internet                              │
+│  └──────┬──────┘                                                   │
+│         │                                                          │
+│    ┌────▼────┐                                                     │
+│    │ Laptop  │   192.168.1.50 (private IP, unreachable)            │
+│    └─────────┘                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+TAILSCALE NAT TRAVERSAL (UDP hole punching):
+
+Step 1: Both devices register with Tailscale
+        ┌───────────────────────────┐
+        │   Tailscale Coordination  │
+        │   Server                  │
+        └─────────┬─────────────────┘
+         "Phone is at 73.45.2.100:54321"
+         "Laptop is at 98.76.5.200:12345"
+                  │
+    ┌─────────────┼─────────────┐
+    ▼             ▼             ▼
+
+Step 2: Devices send packets simultaneously (hole punching)
+┌─────────────┐             ┌─────────────┐
+│   Phone     │ ──────────▶ │   Laptop    │
+│ 73.45.2.100 │ ◀────────── │ 98.76.5.200 │
+└─────────────┘             └─────────────┘
+   Both NATs allow the traffic because both sides initiated!
+
+Step 3: Direct encrypted tunnel established
+┌─────────────┐    🔒      ┌─────────────┐
+│   Phone     │◀══════════▶│   Laptop    │
+│ 100.64.0.1  │ WireGuard  │ 100.64.0.2  │
+└─────────────┘            └─────────────┘
 ```
+
+---
 
 ## Tailscale IP Addresses
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      TAILSCALE IP ADDRESS SCHEME                            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   Every device gets a unique IP in the 100.64.0.0/10 range                 │
-│   (CGNAT range - won't conflict with your existing networks)               │
-│                                                                             │
-│   YOUR TAILNET (Private Network):                                           │
-│   ════════════════════════════════                                          │
-│                                                                             │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │                         YOUR TAILNET                                │  │
-│   │                                                                     │  │
-│   │   ┌────────────────┐     ┌────────────────┐     ┌────────────────┐ │  │
-│   │   │   Mac Mini     │     │   MacBook      │     │   iPhone       │ │  │
-│   │   │                │     │                │     │                │ │  │
-│   │   │  Tailscale IP: │     │  Tailscale IP: │     │  Tailscale IP: │ │  │
-│   │   │  100.64.0.1    │     │  100.64.0.2    │     │  100.64.0.3    │ │  │
-│   │   │                │     │                │     │                │ │  │
-│   │   │  MagicDNS:     │     │  MagicDNS:     │     │  MagicDNS:     │ │  │
-│   │   │  mac-mini      │     │  macbook       │     │  iphone        │ │  │
-│   │   │                │     │                │     │                │ │  │
-│   │   │  Real Local:   │     │  Real Local:   │     │  Real Local:   │ │  │
-│   │   │  192.168.1.10  │     │  10.0.1.50     │     │  Cellular      │ │  │
-│   │   │  (Office)      │     │  (Coffee Shop) │     │  (Mobile)      │ │  │
-│   │   └───────┬────────┘     └───────┬────────┘     └───────┬────────┘ │  │
-│   │           │                      │                      │          │  │
-│   │           └──────────────────────┼──────────────────────┘          │  │
-│   │                                  │                                 │  │
-│   │              ALL devices can reach each other via                  │  │
-│   │              100.64.0.x addresses, regardless of                   │  │
-│   │              physical location or network!                         │  │
-│   │                                                                     │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│   With MagicDNS, access by hostname:                                       │
-│   • http://mac-mini:18789 (from any device on your tailnet)               │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TAILSCALE IP SCHEME                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Range: 100.64.0.0/10 (CGNAT range - won't conflict with your LAN) │
+│                                                                     │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
+│  │  M4 Mac Mini    │  │  M1 MacBook     │  │  iPhone         │     │
+│  │  100.64.0.1     │  │  100.64.0.2     │  │  100.64.0.3     │     │
+│  │  mac-mini       │  │  macbook-pro    │  │  iphone         │     │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘     │
+│                                                                     │
+│  Access methods:                                                    │
+│    • By IP:       curl http://100.64.0.1:18789                     │
+│    • By hostname: curl http://mac-mini:18789    (MagicDNS)         │
+│    • By FQDN:     curl http://mac-mini.tailnet-name.ts.net:18789   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Real-World Clawdbot Example
+**MagicDNS** - Tailscale automatically provides DNS names for your devices, so you don't have to remember IP addresses.
+
+---
+
+## Real-World Scenario: Clawdbot from Anywhere
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CLAWDBOT WITH TAILSCALE                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   SCENARIO: Access Clawdbot from ANYWHERE                                  │
-│                                                                             │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │                                                                     │  │
-│   │   OFFICE                              COFFEE SHOP                   │  │
-│   │   ┌─────────────────────┐             ┌─────────────────────┐      │  │
-│   │   │     M4 Mac Mini     │             │   M1 MacBook Pro    │      │  │
-│   │   │                     │             │                     │      │  │
-│   │   │  Clawdbot Gateway   │             │  Browser accessing: │      │  │
-│   │   │  localhost:18789    │             │  http://100.64.0.1  │      │  │
-│   │   │        │            │             │  :18789             │      │  │
-│   │   │        ▼            │             │        │            │      │  │
-│   │   │  ┌───────────┐      │             │        │            │      │  │
-│   │   │  │ Tailscale │      │  WireGuard  │  ┌───────────┐      │      │  │
-│   │   │  │100.64.0.1 │◀═════╪═════════════╪═▶│ Tailscale │      │      │  │
-│   │   │  └───────────┘      │  Encrypted  │  │100.64.0.2 │      │      │  │
-│   │   │                     │   Direct    │  └───────────┘      │      │  │
-│   │   └─────────────────────┘   P2P       └─────────────────────┘      │  │
-│   │                                                                     │  │
-│   │   ─────────────────────────────────────────────────────────────     │  │
-│   │                                                                     │  │
-│   │   ALSO WORKS FROM:                                                  │  │
-│   │                                                                     │  │
-│   │   ┌─────────────────────┐     ┌─────────────────────┐              │  │
-│   │   │      iPhone         │     │    VPS in Cloud     │              │  │
-│   │   │   Tailscale App     │     │    Tailscale CLI    │              │  │
-│   │   │   100.64.0.3        │     │    100.64.0.4       │              │  │
-│   │   │                     │     │                     │              │  │
-│   │   │   Access Clawdbot   │     │   Access Clawdbot   │              │  │
-│   │   │   from mobile!      │     │   from anywhere!    │              │  │
-│   │   └─────────────────────┘     └─────────────────────┘              │  │
-│   │                                                                     │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│   NO CONFIGURATION NEEDED:                                                 │
-│   • No port forwarding on router                                          │
-│   • No static IP required                                                 │
-│   • No dynamic DNS setup                                                  │
-│   • No firewall rules                                                     │
-│   • Works through cellular, hotel WiFi, corporate networks                │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                    YOUR TAILSCALE NETWORK                           │
+│                     (tailnet: jordan-ai)                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   🏢 OFFICE                    ☕ COFFEE SHOP                        │
+│   ┌─────────────────┐         ┌─────────────────┐                  │
+│   │  M4 Mac Mini    │◀═══════▶│  M1 MacBook     │                  │
+│   │  100.64.0.1     │         │  100.64.0.2     │                  │
+│   │                 │         │                 │                  │
+│   │  ┌───────────┐  │         │  Browser:       │                  │
+│   │  │ Clawdbot  │  │         │  http://mac-mini:18789             │
+│   │  │ :18789    │  │         │                 │                  │
+│   │  └───────────┘  │         └─────────────────┘                  │
+│   └─────────────────┘                  ▲                           │
+│            ▲                           │                           │
+│            │                           │                           │
+│            │     🚗 IN THE CAR          │                           │
+│            │     ┌─────────────────┐   │                           │
+│            └════▶│  iPhone         │◀══┘                           │
+│                  │  100.64.0.3     │                               │
+│                  │                 │                               │
+│                  │  Clawdbot app:  │                               │
+│                  │  http://mac-mini:18789                          │
+│                  └─────────────────┘                               │
+│                                                                     │
+│   🌍 CLOUD VPS (Fly.io)                                            │
+│   ┌─────────────────┐                                              │
+│   │  clawdbot-prod  │◀══════════════════════════════════════════╗  │
+│   │  100.64.0.4     │   Can access Mac Mini securely!           ║  │
+│   └─────────────────┘                                            ║  │
+│            ║                                                      ║  │
+│            ╚══════════════════════════════════════════════════════╝  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Tailscale Features
+**Access Clawdbot from anywhere:**
+```bash
+# Any device on your tailnet can simply do:
+curl http://mac-mini:18789
+# or
+curl http://100.64.0.1:18789
+```
+
+No port forwarding. No VPN clients to configure. Just works.
+
+---
+
+## DERP Relay: The Fallback
+
+Sometimes direct connections fail (very strict firewalls). Tailscale has fallback relay servers.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        TAILSCALE KEY FEATURES                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   FEATURE              DESCRIPTION                      USE CASE            │
-│   ════════════════════════════════════════════════════════════════════════  │
-│                                                                             │
-│   MagicDNS            Auto hostname resolution          http://mac-mini     │
-│                       No need to remember IPs           instead of IP       │
-│                                                                             │
-│   ACLs                Access control lists              Restrict who can    │
-│                       Define who can reach what         access Clawdbot     │
-│                                                                             │
-│   Subnet Routing      Expose entire network             Access office       │
-│                       through one device                network remotely    │
-│                                                                             │
-│   Exit Nodes          Route all traffic through         Appear as if        │
-│                       a specific device                 at home/office      │
-│                                                                             │
-│   Tailscale SSH       SSH without keys/passwords        Easy server access  │
-│                       Identity-based authentication                         │
-│                                                                             │
-│   Funnel              Expose service to internet        Share Clawdbot      │
-│                       through Tailscale proxy           publicly (careful!) │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+NORMAL (Direct Connection):
+┌─────────┐         ┌─────────┐
+│ Phone   │◀═══════▶│ Laptop  │     ~5ms latency
+└─────────┘ direct  └─────────┘
+
+
+FALLBACK (DERP Relay - still encrypted!):
+┌─────────┐         ┌─────────┐         ┌─────────┐
+│ Phone   │════════▶│  DERP   │════════▶│ Laptop  │
+└─────────┘         │ Relay   │         └─────────┘
+                    └─────────┘
+                    ~50ms latency (still end-to-end encrypted!)
+                    
+Tailscale CANNOT see your data - only encrypted packets pass through.
 ```
+
+---
 
 ## Setup Commands
 
 ```bash
-# ═══════════════════════════════════════════════════════════════════════════
-# INSTALLATION
-# ═══════════════════════════════════════════════════════════════════════════
-
-# macOS
+# Install (macOS)
 brew install tailscale
 
-# Linux (Ubuntu/Debian)
-curl -fsSL https://tailscale.com/install.sh | sh
+# Start the service
+sudo tailscaled &
 
-# ═══════════════════════════════════════════════════════════════════════════
-# BASIC USAGE
-# ═══════════════════════════════════════════════════════════════════════════
+# Login (opens browser for auth)
+tailscale up
 
-# Start and authenticate (opens browser for SSO)
-sudo tailscale up
-
-# Get your Tailscale IP
-tailscale ip -4
-# Output: 100.64.0.1
-
-# See all devices on your tailnet
+# Check status
 tailscale status
-# 100.64.0.1    mac-mini    jordaaan@   macOS   active; direct
-# 100.64.0.2    macbook     jordaaan@   macOS   active; direct
-# 100.64.0.3    iphone      jordaaan@   iOS     idle
+# Output:
+# 100.64.0.1    mac-mini      jordanai@    macOS   -
+# 100.64.0.2    macbook-pro   jordanai@    macOS   active; direct 192.168.1.50:41641
 
-# Test connection to another device
+# See your Tailscale IP
+tailscale ip -4
+# 100.64.0.2
+
+# Ping another device
 tailscale ping mac-mini
-# pong from mac-mini (100.64.0.1) via 192.168.1.10:41641 in 2ms
+# pong from mac-mini (100.64.0.1) via 192.168.1.100:41641 in 2ms
 
-# Check if connection is direct or relayed
-tailscale netcheck
-
-# Disconnect from tailnet
-sudo tailscale down
-
-# ═══════════════════════════════════════════════════════════════════════════
-# ADVANCED FEATURES
-# ═══════════════════════════════════════════════════════════════════════════
-
-# Enable this device as an exit node (route others' traffic through it)
-sudo tailscale up --advertise-exit-node
-
-# Use another device as exit node (appear as that device's location)
-sudo tailscale up --exit-node=mac-mini
-
-# Expose a subnet (make 192.168.1.0/24 accessible to tailnet)
-sudo tailscale up --advertise-routes=192.168.1.0/24
-
-# Enable Tailscale SSH (identity-based, no keys needed)
-sudo tailscale up --ssh
-
-# Expose a service publicly via Funnel
-tailscale funnel 18789
-# Creates https://mac-mini.tailnet-name.ts.net/
-```
-
-## SSH Tunnel vs Tailscale Comparison
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                   SSH TUNNEL vs TAILSCALE COMPARISON                        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   FEATURE                    SSH TUNNEL           TAILSCALE                 │
-│   ════════════════════════════════════════════════════════════════          │
-│                                                                             │
-│   Setup                      Manual command       One-time install          │
-│                              each session         + authentication          │
-│                                                                             │
-│   Software Required          No (built-in SSH)    Yes (Tailscale app)       │
-│                                                                             │
-│   Connection Model           Point-to-point       Mesh (all devices         │
-│                              (one tunnel)         connected)                │
-│                                                                             │
-│   Network Changes            ❌ Breaks            ✅ Seamless               │
-│   (WiFi → cellular)          connection           (auto-reconnects)         │
-│                                                                             │
-│   Multiple Devices           ❌ Need multiple     ✅ Automatic              │
-│                              tunnels              (all see each other)      │
-│                                                                             │
-│   Mobile Support             ❌ Poor              ✅ Excellent              │
-│                              (no iOS/Android)     (native apps)             │
-│                                                                             │
-│   Performance                Good                 Excellent                 │
-│                              (OpenSSH)            (WireGuard kernel)        │
-│                                                                             │
-│   Cost                       Free                 Free (100 devices)        │
-│                                                                             │
-│   ─────────────────────────────────────────────────────────────────────     │
-│                                                                             │
-│   USE SSH TUNNEL WHEN:                USE TAILSCALE WHEN:                   │
-│   ════════════════════                ═══════════════════                   │
-│                                                                             │
-│   • Quick, one-off access             • Always-on access                    │
-│   • Can't install software            • Multiple devices                    │
-│   • Maximum security paranoia         • Mobile access needed                │
-│   • Stable network only               • Changing networks                   │
-│                                        • "It just works" preference         │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+# Access Clawdbot on Mac Mini from anywhere
+curl http://mac-mini:18789/health
 ```
 
 ---
 
-## Key Takeaways
+## Pros and Cons
 
-1. **Tailscale = mesh VPN** - all your devices on one private network
-2. **WireGuard underneath** - state-of-the-art encryption, kernel-level performance
-3. **Direct P2P connections** - your data never touches Tailscale servers
-4. **Zero configuration** - no port forwarding, no static IPs, no firewall rules
-5. **Best for**: multi-device access, mobile use, "it just works" scenarios
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                          TAILSCALE                                │
+├──────────────────────────────────────────────────────────────────┤
+│  ✅ PROS                      │  ⚠️  CONS                        │
+├───────────────────────────────┼──────────────────────────────────┤
+│  Zero configuration           │  Requires software installation  │
+│  (just install and login)     │  (not everywhere allows this)    │
+├───────────────────────────────┼──────────────────────────────────┤
+│  Works through any NAT        │  Dependency on Tailscale service │
+│  (even double NAT, CGNAT)     │  (coordination servers)          │
+├───────────────────────────────┼──────────────────────────────────┤
+│  Automatic reconnection       │  Learning curve for ACLs         │
+│  (seamless WiFi→cellular)     │  (if you need complex policies)  │
+├───────────────────────────────┼──────────────────────────────────┤
+│  MagicDNS hostnames           │  Free tier has device limits     │
+│  (http://mac-mini not IPs)    │  (100 devices, 3 users)          │
+├───────────────────────────────┼──────────────────────────────────┤
+│  Multi-device mesh            │  Small latency vs no VPN         │
+│  (all devices can talk)       │  (usually <5ms, barely noticeable│
+├───────────────────────────────┼──────────────────────────────────┤
+│  WireGuard encryption         │                                  │
+│  (state-of-the-art security)  │                                  │
+└───────────────────────────────┴──────────────────────────────────┘
+```
 
 ---
 
-*Created as part of Clawdbot deployment learning - understanding mesh VPN networking*
+## SSH Tunnel vs Tailscale
+
+```
+┌───────────────────┬────────────────────────┬────────────────────────┐
+│  FEATURE          │  SSH TUNNEL            │  TAILSCALE             │
+├───────────────────┼────────────────────────┼────────────────────────┤
+│  Setup            │  Manual each time      │  One-time install      │
+│  Network changes  │  Breaks (reconnect)    │  Seamless transition   │
+│  Multiple devices │  Tunnel per device     │  All devices in mesh   │
+│  Mobile access    │  Awkward               │  Native apps           │
+│  Port forwarding  │  Per-port tunnel       │  Full network access   │
+│  Dependencies     │  SSH (everywhere)      │  Tailscale software    │
+│  Cost             │  Free                  │  Free (up to limits)   │
+│  Latency          │  ~same                 │  ~same                 │
+│  Security         │  SSH encryption        │  WireGuard encryption  │
+└───────────────────┴────────────────────────┴────────────────────────┘
+
+RECOMMENDATIONS:
+
+Use SSH Tunnel when:
+  • Quick/temporary access needed
+  • Can't install software on target machine  
+  • Single port, single machine
+  • Network is stable
+
+Use Tailscale when:
+  • Always-on access needed
+  • Multiple devices or team members
+  • Mobile access required
+  • Frequently change networks (laptop user)
+  • "It just works" is priority
+```
+
+---
+
+## Tailscale for Teams
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TEAM TAILSCALE SETUP                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Admin Console (admin.tailscale.com)                               │
+│  ┌─────────────────────────────────────┐                           │
+│  │  Users:                             │                           │
+│  │    • jordan@company.com  (admin)    │                           │
+│  │    • dev1@company.com    (member)   │                           │
+│  │    • dev2@company.com    (member)   │                           │
+│  │                                     │                           │
+│  │  Devices:                           │                           │
+│  │    • mac-mini (jordan) - 100.64.0.1 │                           │
+│  │    • laptop-1 (dev1)   - 100.64.0.2 │                           │
+│  │    • laptop-2 (dev2)   - 100.64.0.3 │                           │
+│  │                                     │                           │
+│  │  ACLs (Access Control):             │                           │
+│  │    • All users can access mac-mini  │                           │
+│  │    • Only jordan can SSH to servers │                           │
+│  └─────────────────────────────────────┘                           │
+│                                                                     │
+│  All team members can now access:                                   │
+│    http://mac-mini:18789  (Clawdbot dashboard)                     │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Quick Reference
+
+```bash
+# Install
+brew install tailscale         # macOS
+curl -fsSL https://tailscale.com/install.sh | sh  # Linux
+
+# Basic operations
+tailscale up                   # Connect to tailnet
+tailscale down                 # Disconnect
+tailscale status               # Show connected devices
+tailscale ip -4                # Show your Tailscale IP
+
+# Diagnostics
+tailscale ping <hostname>      # Test connectivity
+tailscale netcheck             # Check NAT type, connectivity
+tailscale debug derp           # Check DERP relay status
+
+# Share a machine (let others access without adding to tailnet)
+tailscale serve 18789          # Expose port via Tailscale Funnel
+
+# Access from any tailnet device
+curl http://<hostname>:18789   # By MagicDNS name
+curl http://100.64.0.x:18789   # By Tailscale IP
+```
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| "Tailscale is stopped" | Run `tailscale up` to connect |
+| Can't reach device | Check `tailscale status` - is it online? |
+| High latency | Check `tailscale ping` - using DERP relay? Check firewall |
+| MagicDNS not working | Enable in admin console, or use IP directly |
+| Connection timeout | Verify both devices logged into same tailnet |
+
+---
+
+*Created with the Explainer Docs skill for learning while building.*
