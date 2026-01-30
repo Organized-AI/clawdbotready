@@ -1,13 +1,22 @@
 # Clawdbot Ready (macOS VM Version)
 
 ## 🖥️ Version Identification
-**This is the macOS VM implementation** of Clawdbot Ready - focused on Lume hypervisor-based virtualization for Apple Silicon Macs. This version provides the highest level of isolation and security for AI agent deployments while maintaining native iMessage support.
+**This is the macOS Edition** of Clawdbot Ready - supporting both VM-isolated and native deployments on Apple Silicon Macs.
 
 **Platform**: macOS Sequoia+ on Apple Silicon (M1/M2/M3/M4)
-**Primary Tool**: openclaw-vm-setup automation toolkit
-**Use Case**: Secure, isolated AI messaging gateway environments
 
-For alternative deployment methods (Docker, cloud, native), see the broader Clawdbot ecosystem documentation.
+**Two Deployment Modes**:
+1. **VM-Isolated** (Primary focus): Lume hypervisor-based virtualization
+   - Tool: `openclaw-vm-setup` automation toolkit
+   - Use case: Production, multi-tenant, maximum security
+   - Guide: `openclaw-macos-vm-security-hardening-guide.md`
+
+2. **Native macOS** (Alternative): Direct host installation
+   - Tool: Manual setup with security hardening
+   - Use case: Development, testing, single-user (e.g., M1 Mac mini)
+   - Guide: `openclaw-native-macos-lockdown-guide.md`
+
+For alternative deployment methods (Docker, cloud platforms, x86 hosts), see the broader Clawdbot ecosystem documentation.
 
 ---
 

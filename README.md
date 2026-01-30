@@ -1,16 +1,41 @@
-# Clawdbot Ready - macOS VM Version
+# Clawdbot Ready - macOS Edition
 
-## 🖥️ Version Notice
-**You are viewing the macOS VM deployment toolkit** for Clawdbot. This version uses Lume hypervisor to create isolated, secure virtual machines on Apple Silicon Macs for running AI messaging gateways.
+## 🖥️ Deployment Options
 
-**Key Features**:
-- 🔒 Full VM-level isolation (stronger security than containers)
-- 📱 Native iMessage integration support
-- 🍎 Optimized for Apple Silicon (M1/M2/M3/M4)
-- 🤖 Automated deployment via `openclaw-vm-setup` toolkit
-- 🛡️ Defense-in-depth security hardening
+This repository supports **two macOS deployment approaches** for Clawdbot on Apple Silicon:
 
-**Platform Requirements**: macOS Sequoia+ on Apple Silicon
+### 1. 🔒 VM-Isolated (Recommended for Production)
+**Maximum security with Lume hypervisor virtualization**
+
+- ✅ Full VM-level isolation (stronger than containers)
+- ✅ Separate Apple ID support (burner accounts)
+- ✅ Easy snapshot/rollback
+- ✅ Defense-in-depth security hardening
+- ✅ iMessage support
+- 📁 Setup: [`openclaw-vm-setup/`](openclaw-vm-setup/) toolkit
+- 📖 Guide: [VM Security Hardening](openclaw-macos-vm-security-hardening-guide.md)
+
+**Best for**: Multi-tenant deployments, production environments, maximum isolation
+
+### 2. ⚡ Native macOS (Direct Install)
+**Fastest setup, direct hardware access**
+
+- ✅ Zero virtualization overhead
+- ✅ Full hardware acceleration
+- ✅ Simpler troubleshooting
+- ✅ iMessage support
+- ✅ Direct system integration
+- ⚠️ Shares host system resources
+- 📖 Guide: [Native macOS Lockdown](openclaw-native-macos-lockdown-guide.md)
+
+**Best for**: Development, testing, single-user deployments, M1 Mac mini setups
+
+---
+
+## Platform Requirements
+- **Hardware**: Apple Silicon (M1/M2/M3/M4)
+- **OS**: macOS Sequoia or later
+- **Network**: Internet connection for initial setup
 
 For other deployment options (Docker, cloud platforms, x86 hosts), see the [main Clawdbot documentation](https://github.com/Organized-AI).
 
@@ -18,7 +43,7 @@ For other deployment options (Docker, cloud platforms, x86 hosts), see the [main
 
 ## Overview
 
-Comprehensive documentation and automation toolkit for deploying Clawdbot - a Claude-powered messaging gateway - in secure, isolated macOS virtual machines.
+Comprehensive documentation and automation toolkit for deploying Clawdbot - a Claude-powered messaging gateway - on macOS with both VM-isolated and native deployment options.
 
 ## Documentation
 
@@ -33,17 +58,31 @@ Located in `/DOCUMENTATION/`:
 - **[SSH Tunnel Explained](DOCUMENTATION/ssh-tunnel-explained.md)** - How SSH tunnels provide secure remote access
 - **[Tailscale Explained](DOCUMENTATION/tailscale-explained.md)** - Mesh VPN networking for always-on remote access
 
-## Deployment Options
+## macOS Deployment Comparison
+
+| Feature | VM-Isolated | Native macOS |
+|---------|-------------|--------------|
+| **Security** | Maximum (VM isolation) | Host-level |
+| **Setup Time** | 30-45 min | 10-15 min |
+| **iMessage** | ✅ Yes | ✅ Yes |
+| **Performance** | Good (virtualized) | Excellent (native) |
+| **Isolation** | Full VM boundary | Process-level |
+| **Snapshots** | ✅ Yes | ❌ No |
+| **Hardware Access** | Limited | Full |
+| **Best For** | Production, multi-tenant | Development, testing |
+| **Cost** | $0 | $0 |
+
+## Other Deployment Options
+
+For non-macOS deployments, see the broader ecosystem:
 
 | Platform | Cost | iMessage | Always-on | Best For |
 |----------|------|----------|-----------|----------|
-| macOS Native | $0 | ✅ | Manual | iMessage users |
 | Docker Local | $0 | ❌ | Manual | Portable setup |
 | Fly.io | $10-15/mo | ❌ | ✅ | Production |
 | Hetzner VPS | $5/mo | ❌ | ✅ | Budget hosting |
 | GCP Free Tier | $0-5/mo | ❌ | ✅ | Enterprise |
 | DigitalOcean | $6/mo | ❌ | ✅ | Simple VPS |
-| macOS VM (Lume) | $0 | ✅ | ✅ | Isolation |
 
 ## Team Operations
 
@@ -59,10 +98,22 @@ For teams managing Clawdbot deployments, the [Team Operations Guide](clawdbot-te
 
 ## Quick Start
 
-1. Choose your platform from the [Deployment Guide](clawdbot-deployment-guide.md)
-2. Follow the [Customer Setup Guide](clawdbot-customer-setup-guide.md)
-3. For team deployments, review the [Team Operations Guide](clawdbot-team-operations-guide.md)
-4. Reference explainer docs for deeper understanding
+### For VM-Isolated Deployment (Recommended)
+1. Review the [VM Security Hardening Guide](openclaw-macos-vm-security-hardening-guide.md)
+2. Run the automated setup: `cd openclaw-vm-setup && ./setup.sh`
+3. Follow the [Customer Setup Guide](clawdbot-customer-setup-guide.md) for Gateway configuration
+4. For teams, review the [Team Operations Guide](clawdbot-team-operations-guide.md)
+
+### For Native macOS Deployment
+1. Review the [Native macOS Lockdown Guide](openclaw-native-macos-lockdown-guide.md)
+2. Follow security hardening steps
+3. Install Gateway directly on host
+4. Configure according to [Customer Setup Guide](clawdbot-customer-setup-guide.md)
+
+### General Resources
+- [Deployment Guide](clawdbot-deployment-guide.md) - Compare all platform options
+- [SSH Tunnel Explained](DOCUMENTATION/ssh-tunnel-explained.md) - Remote access architecture
+- [Tailscale Explained](DOCUMENTATION/tailscale-explained.md) - VPN mesh networking
 
 ## About
 

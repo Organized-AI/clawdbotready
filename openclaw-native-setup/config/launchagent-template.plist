@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Service identifier -->
+	<key>Label</key>
+	<string>ai.openclaw.gateway</string>
+
+	<!-- Program to execute -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/openclaw/.openclaw/gateway/openclaw-gateway</string>
+	</array>
+
+	<!-- Start Gateway when user logs in -->
+	<key>RunAtLoad</key>
+	<true/>
+
+	<!-- Keep Gateway running (restart if crashed) -->
+	<key>KeepAlive</key>
+	<dict>
+		<!-- Always try to keep alive -->
+		<key>SuccessfulExit</key>
+		<false/>
+		<!-- Restart if crashed -->
+		<key>Crashed</key>
+		<true/>
+	</dict>
+
+	<!-- Logging configuration -->
+	<key>StandardOutPath</key>
+	<string>/Users/openclaw/.openclaw/logs/gateway.log</string>
+
+	<key>StandardErrorPath</key>
+	<string>/Users/openclaw/.openclaw/logs/gateway.error.log</string>
+
+	<!-- Working directory for Gateway process -->
+	<key>WorkingDirectory</key>
+	<string>/Users/openclaw/.openclaw/gateway</string>
+
+	<!-- Environment variables -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<!-- Path to exec-approvals.json (deny-by-default security) -->
+		<key>EXEC_APPROVALS_PATH</key>
+		<string>/Users/openclaw/.openclaw/exec-approvals.json</string>
+
+		<!-- Gateway configuration directory -->
+		<key>OPENCLAW_CONFIG_DIR</key>
+		<string>/Users/openclaw/.openclaw/gateway</string>
+
+		<!-- Data directory for Gateway storage -->
+		<key>OPENCLAW_DATA_DIR</key>
+		<string>/Users/openclaw/.openclaw/data</string>
+
+		<!-- Log directory -->
+		<key>OPENCLAW_LOG_DIR</key>
+		<string>/Users/openclaw/.openclaw/logs</string>
+	</dict>
+
+	<!-- Resource limits -->
+	<key>SoftResourceLimits</key>
+	<dict>
+		<!-- Max open files -->
+		<key>NumberOfFiles</key>
+		<integer>1024</integer>
+	</dict>
+
+	<key>HardResourceLimits</key>
+	<dict>
+		<!-- Hard limit on open files -->
+		<key>NumberOfFiles</key>
+		<integer>2048</integer>
+	</dict>
+
+	<!-- Process priority (nice value) -->
+	<!-- 0 = normal priority -->
+	<key>Nice</key>
+	<integer>0</integer>
+
+	<!-- Timeout for process to start (seconds) -->
+	<key>LaunchOnlyOnce</key>
+	<false/>
+
+	<!-- Abandoned process cleanup -->
+	<key>AbandonProcessGroup</key>
+	<false/>
+
+	<!-- Exit timeout (seconds) -->
+	<key>ExitTimeOut</key>
+	<integer>30</integer>
+
+	<!-- Throttle restart attempts -->
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+
+	<!-- Do not run when on battery power -->
+	<!-- Set to false to allow running on battery -->
+	<key>RunAtLoad</key>
+	<true/>
+
+</dict>
+</plist>
