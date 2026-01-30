@@ -1,0 +1,20 @@
+{
+  "name": "Clawdbot Ready",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Add your test command here\"",
+    "setup": "pnpm install && node scripts/ensure-just.js && node scripts/welcome.js",
+    "dev": "echo \"Add your dev command here\"",
+    "build": "echo \"Add your build command here\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
