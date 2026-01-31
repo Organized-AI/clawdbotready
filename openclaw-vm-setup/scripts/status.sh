@@ -9,16 +9,41 @@ source "${SCRIPT_DIR}/config/settings.env" 2>/dev/null || true
 VM_NAME="${VM_NAME:-openclaw-secure}"
 VM_USER="${VM_USER:-openclaw}"
 KEY_PATH="$HOME/.ssh/openclaw_vm_ed25519"
+VM_CREATION_PID_FILE="${SCRIPT_DIR}/.vm_creation.pid"
+VM_CREATION_LOG="${SCRIPT_DIR}/logs/vm-creation-background.log"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo "==============================================="
 echo "  OpenClaw VM Status"
 echo "==============================================="
 echo ""
+
+# Check for background VM creation
+if [[ -f "$VM_CREATION_PID_FILE" ]]; then
+    pid=$(cat "$VM_CREATION_PID_FILE")
+    if ps -p "$pid" > /dev/null 2>&1; then
+        echo -e "${YELLOW}🚀 VM Creation in Progress${NC}"
+        echo "  PID: $pid"
+        echo "  Log: $VM_CREATION_LOG"
+        echo ""
+        if [[ -f "$VM_CREATION_LOG" ]]; then
+            echo "Recent log output:"
+            echo -e "${BLUE}$(tail -10 "$VM_CREATION_LOG")${NC}"
+        fi
+        echo ""
+        echo "Monitor live: tail -f $VM_CREATION_LOG"
+        echo "Continue when ready: ./setup.sh continue"
+        exit 0
+    else
+        # Stale PID file
+        rm -f "$VM_CREATION_PID_FILE"
+    fi
+fi
 
 # Check if VM exists
 echo -n "VM exists: "

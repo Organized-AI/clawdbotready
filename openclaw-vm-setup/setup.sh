@@ -5,14 +5,12 @@
 # This script orchestrates the complete secure setup of OpenClaw in a macOS VM
 # Target: M4 Mac Mini (fresh machine)
 #
-# Usage: ./setup.sh [phase]
-#   phase 1: Install Lume and create VM
-#   phase 2: Configure SSH hardening
-#   phase 3: Setup host firewall
-#   phase 4: Install and configure OpenClaw Gateway
-#   phase 5: Setup monitoring and alerting
-#   phase 6: Configure backups
-#   all: Run all phases (default)
+# Usage: ./setup.sh [command]
+#   Recommended: start → continue (async workflow)
+#   start: Verify environment + create VM in background
+#   continue: Complete setup after VM creation
+#   all: Run all phases sequentially (default)
+#   0-6: Run individual phases
 #===============================================================================
 
 set -euo pipefail
@@ -29,6 +27,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/config/settings.env"
 LOG_DIR="${SCRIPT_DIR}/logs"
 LOG_FILE="${LOG_DIR}/setup-$(date +%Y%m%d_%H%M%S).log"
+VM_CREATION_PID_FILE="${SCRIPT_DIR}/.vm_creation.pid"
+VM_CREATION_LOG="${LOG_DIR}/vm-creation-background.log"
 
 # VM Configuration (will be loaded from settings.env)
 VM_NAME="${VM_NAME:-openclaw-secure}"
@@ -94,7 +94,7 @@ check_macos() {
 }
 
 check_disk_space() {
-    local required_gb=60
+    local required_gb=55
     local available_gb=$(df -g / | awk 'NR==2 {print $4}')
 
     if [[ "$available_gb" -lt "$required_gb" ]]; then
@@ -138,6 +138,85 @@ get_vm_ip() {
     else
         lume get "$VM_NAME" 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1
     fi
+}
+
+#===============================================================================
+# Async VM Creation Helpers
+#===============================================================================
+
+is_vm_creation_running() {
+    if [[ -f "$VM_CREATION_PID_FILE" ]]; then
+        local pid=$(cat "$VM_CREATION_PID_FILE")
+        if ps -p "$pid" > /dev/null 2>&1; then
+            return 0  # Running
+        else
+            # Stale PID file
+            rm -f "$VM_CREATION_PID_FILE"
+            return 1  # Not running
+        fi
+    fi
+    return 1  # Not running
+}
+
+wait_for_vm_creation() {
+    if ! is_vm_creation_running; then
+        # Check if VM already exists
+        if lume get "$VM_NAME" &>/dev/null; then
+            success "VM already exists and ready"
+            return 0
+        fi
+        return 0  # Not running, nothing to wait for
+    fi
+
+    local pid=$(cat "$VM_CREATION_PID_FILE")
+    info "VM creation in progress (PID: $pid)"
+    info "Waiting for VM creation to complete..."
+    info "Tail log: tail -f $VM_CREATION_LOG"
+
+    # Wait for the background process
+    while ps -p "$pid" > /dev/null 2>&1; do
+        echo -n "."
+        sleep 5
+    done
+    echo ""
+
+    rm -f "$VM_CREATION_PID_FILE"
+
+    # Check if VM was created successfully
+    if lume get "$VM_NAME" &>/dev/null; then
+        success "VM creation completed successfully"
+        return 0
+    else
+        error "VM creation failed. Check log: $VM_CREATION_LOG"
+        return 1
+    fi
+}
+
+start_vm_creation_background() {
+    if is_vm_creation_running; then
+        warn "VM creation already in progress"
+        return 0
+    fi
+
+    if lume get "$VM_NAME" &>/dev/null; then
+        warn "VM '$VM_NAME' already exists"
+        return 0
+    fi
+
+    info "Starting VM creation in background..."
+
+    # Run Phase 1 in background
+    (
+        phase1_install_lume
+    ) > "$VM_CREATION_LOG" 2>&1 &
+
+    local bg_pid=$!
+    echo "$bg_pid" > "$VM_CREATION_PID_FILE"
+
+    success "VM creation started in background (PID: $bg_pid)"
+    info "Monitor progress: tail -f $VM_CREATION_LOG"
+    info "Check status: ./status.sh"
+    info "Continue setup when ready: ./setup.sh continue"
 }
 
 #===============================================================================
@@ -185,10 +264,10 @@ phase0_verify_environment() {
     local available_gb=$(df -g / | awk 'NR==2 {print $4}')
     info "Available disk space: ${available_gb}GB"
 
-    if [[ "$available_gb" -ge 60 ]]; then
-        success "Disk space OK (60GB+ available)"
+    if [[ "$available_gb" -ge 55 ]]; then
+        success "Disk space OK (55GB+ available)"
     else
-        error "Need at least 60GB free (VM requires ~50GB). Available: ${available_gb}GB"
+        error "Need at least 55GB free (VM requires ~50GB). Available: ${available_gb}GB"
         all_checks_passed=false
     fi
 
@@ -421,11 +500,37 @@ copy_ssh_key() {
     local key_path="$HOME/.ssh/openclaw_vm_ed25519.pub"
 
     info "Copying SSH public key to VM..."
-    echo ""
-    echo "You will be prompted for the VM user's password."
-    echo ""
 
-    ssh-copy-id -i "$key_path" "${VM_USER}@${vm_ip}"
+    # Use password from settings.env if provided, otherwise prompt
+    if [[ -n "$VM_PASSWORD" ]]; then
+        info "Using password from settings.env for automated SSH key copy..."
+
+        # Use expect to automate password input
+        # Pass variables as environment variables to avoid escaping issues
+        VM_PASS="$VM_PASSWORD" VM_IP="$vm_ip" VM_KEY="$key_path" VM_U="$VM_USER" expect << 'EXPECT_SCRIPT'
+set timeout 30
+set password $env(VM_PASS)
+spawn ssh-copy-id -o IdentitiesOnly=yes -o PreferredAuthentications=password -o StrictHostKeyChecking=no -i $env(VM_KEY) $env(VM_U)@$env(VM_IP)
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+EXPECT_SCRIPT
+    else
+        echo ""
+        echo "You will be prompted for the VM user's password."
+        echo ""
+
+        # Use -o IdentitiesOnly=yes to prevent trying other SSH keys
+        ssh-copy-id -o IdentitiesOnly=yes -o PreferredAuthentications=password -i "$key_path" "${VM_USER}@${vm_ip}"
+    fi
 
     # Verify key-based auth works
     if ssh -i "${key_path%.pub}" -o PasswordAuthentication=no "${VM_USER}@${vm_ip}" "echo 'SSH key auth working'" &>/dev/null; then
@@ -476,7 +581,30 @@ SSHD_EOF
 )
 
     # Apply configuration
-    ssh -i "$key_path" "${VM_USER}@${vm_ip}" << REMOTE_EOF
+    if [[ -n "$VM_PASSWORD" ]]; then
+        # Use password for sudo commands
+        ssh -i "$key_path" "${VM_USER}@${vm_ip}" bash << REMOTE_EOF
+# Backup original config
+echo '$VM_PASSWORD' | sudo -S cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+
+# Write new config
+echo '$sshd_config' | sudo -S tee /etc/ssh/sshd_config.hardened > /dev/null
+
+# Add user restriction
+echo "AllowUsers ${VM_USER}" | sudo -S tee -a /etc/ssh/sshd_config.hardened > /dev/null
+
+# Apply config
+echo '$VM_PASSWORD' | sudo -S mv /etc/ssh/sshd_config.hardened /etc/ssh/sshd_config
+
+# Restart SSH
+echo '$VM_PASSWORD' | sudo -S launchctl unload /System/Library/LaunchDaemons/ssh.plist 2>/dev/null || true
+echo '$VM_PASSWORD' | sudo -S launchctl load /System/Library/LaunchDaemons/ssh.plist
+
+echo "SSH configuration hardened"
+REMOTE_EOF
+    else
+        # Prompt for password
+        ssh -i "$key_path" -t "${VM_USER}@${vm_ip}" << REMOTE_EOF
 # Backup original config
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
 
@@ -495,6 +623,7 @@ sudo launchctl load /System/Library/LaunchDaemons/ssh.plist
 
 echo "SSH configuration hardened"
 REMOTE_EOF
+    fi
 
     # Verify we can still connect
     sleep 2
@@ -632,11 +761,11 @@ GATEWAY_CONFIG
 echo "Gateway configuration created"
 REMOTE_EOF
 
-    # Copy exec-approvals template
+    # Copy exec-approvals template (using SSH instead of scp since we disabled SFTP)
     if [[ -f "${SCRIPT_DIR}/config/exec-approvals.json" ]]; then
         info "Copying exec-approvals configuration..."
-        scp -i "$key_path" "${SCRIPT_DIR}/config/exec-approvals.json" \
-            "${VM_USER}@${vm_ip}:~/.openclaw/exec-approvals.json"
+        cat "${SCRIPT_DIR}/config/exec-approvals.json" | \
+            ssh -i "$key_path" "${VM_USER}@${vm_ip}" "cat > ~/.openclaw/exec-approvals.json"
     fi
 
     success "Gateway configuration complete"
@@ -852,12 +981,68 @@ main() {
 
     # Pre-flight checks
     check_macos
-    check_disk_space
 
     # Determine which phase to run
     local phase="${1:-all}"
 
+    # Only check disk space for phases that create/modify the VM
     case "$phase" in
+        0|phase0|1|phase1|all)
+            check_disk_space
+            ;;
+        *)
+            info "Skipping disk space check (not needed for Phase $phase)"
+            ;;
+    esac
+
+    case "$phase" in
+        start)
+            # Run Phase 0, then start Phase 1 in background
+            phase0_verify_environment || exit 1
+            start_vm_creation_background
+
+            echo ""
+            header "Next Steps"
+            echo -e "${GREEN}✅ Environment verified${NC}"
+            echo -e "${YELLOW}🚀 VM creation started in background (25 min)${NC}"
+            echo ""
+            echo "While you wait:"
+            echo "  • Monitor progress: tail -f $VM_CREATION_LOG"
+            echo "  • Check VM status: ./status.sh"
+            echo ""
+            echo "When VM creation completes:"
+            echo "  1. Complete manual macOS Setup Assistant"
+            echo "     - Username: $VM_USER"
+            echo "     - Password: (from settings.env)"
+            echo "     - Enable Remote Login"
+            echo "  2. Run: ./setup.sh continue"
+            ;;
+        continue)
+            # Wait for VM creation, then run Phases 2-6
+            wait_for_vm_creation || exit 1
+
+            echo ""
+            info "Ready to continue with SSH hardening and configuration"
+            echo ""
+            echo -e "${YELLOW}⏸️  Manual Setup Required${NC}"
+            echo "Please complete these steps in the VM Screen Sharing window:"
+            echo "  1. Complete macOS Setup Assistant"
+            echo "     - Username: $VM_USER"
+            echo "     - Password: $VM_PASSWORD"
+            echo "  2. Enable Remote Login:"
+            echo "     System Settings → General → Sharing → Remote Login"
+            echo ""
+            read -p "Press Enter when manual setup is complete..."
+
+            phase2_ssh_hardening
+            phase3_host_firewall
+            phase4_gateway_config
+            phase5_monitoring
+            phase6_backups
+
+            header "Setup Complete!"
+            echo -e "${GREEN}OpenClaw VM is now configured with security hardening.${NC}"
+            ;;
         0|phase0)
             phase0_verify_environment
             ;;
@@ -908,15 +1093,25 @@ main() {
             echo "  ${SCRIPT_DIR}/scripts/backup-vm.sh"
             ;;
         *)
-            echo "Usage: $0 [phase]"
-            echo "  phase 0: Verify environment and prerequisites"
-            echo "  phase 1: Install Lume and create VM"
-            echo "  phase 2: Configure SSH hardening"
-            echo "  phase 3: Setup host firewall"
-            echo "  phase 4: Install and configure OpenClaw Gateway"
-            echo "  phase 5: Setup monitoring and alerting"
-            echo "  phase 6: Configure backups"
-            echo "  all: Run all phases (default)"
+            echo "Usage: $0 [command]"
+            echo ""
+            echo "Recommended Workflow:"
+            echo "  start        Quick start - verify environment + create VM in background"
+            echo "  continue     Continue after VM creation - run all remaining phases"
+            echo ""
+            echo "Individual Phases:"
+            echo "  0 or phase0  Verify environment and prerequisites"
+            echo "  1 or phase1  Install Lume and create VM"
+            echo "  2 or phase2  Configure SSH hardening"
+            echo "  3 or phase3  Setup host firewall"
+            echo "  4 or phase4  Install and configure OpenClaw Gateway"
+            echo "  5 or phase5  Setup monitoring and alerting"
+            echo "  6 or phase6  Configure backups"
+            echo "  all          Run all phases sequentially (default)"
+            echo ""
+            echo "Example:"
+            echo "  ./setup.sh start    # Start VM creation, do other work"
+            echo "  ./setup.sh continue # Complete setup when VM ready"
             exit 1
             ;;
     esac
