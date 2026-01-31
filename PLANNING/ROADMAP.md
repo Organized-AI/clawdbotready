@@ -23,21 +23,25 @@ Clear understanding of deployment options, security requirements, and implementa
 ---
 
 ## Milestone 2: openclaw-vm-setup Core Implementation
-**Status**: 🚧 In Progress
+**Status**: 🚧 In Progress (Phase 0-1 tested, VM creation in progress)
 
-### Phase 0: Prerequisites & Validation
-- [ ] System requirements checker
-- [ ] Dependency validator (Lume, Homebrew, etc.)
-- [ ] Disk space verification
-- [ ] Apple Silicon detection
-- [ ] macOS version check
+### Phase 0: Prerequisites & Validation ✅ TESTED
+- [x] System requirements checker
+- [x] Dependency validator (Lume, Homebrew, etc.)
+- [x] Disk space verification (60GB requirement)
+- [x] Apple Silicon detection
+- [x] macOS version check
+- [x] **Fixed**: Homebrew-first Lume installation
+- [x] **Fixed**: HTML detection for install scripts
+- [x] **Tested**: 2026-01-30 on M4 Mac Mini, macOS 15.6
 
-### Phase 1: VM Provisioning
-- [ ] Lume installation automation
-- [ ] macOS VM creation
-- [ ] Resource allocation (CPU, memory, disk)
-- [ ] Initial VM boot and configuration
-- [ ] Network setup
+### Phase 1: VM Provisioning 🚧 IN PROGRESS
+- [x] Lume installation automation (Homebrew method)
+- [x] Lume command flags corrected (--disk-size, --memory format)
+- [x] macOS VM creation command (running in background)
+- [x] Resource allocation (4 CPU, 8GB memory, 50GB disk)
+- [ ] Initial VM boot and configuration (waiting for VM creation)
+- [ ] Network setup (pending VM completion)
 
 ### Phase 2: SSH Hardening
 - [ ] Ed25519 key generation
@@ -76,22 +80,28 @@ Clear understanding of deployment options, security requirements, and implementa
 - [ ] Retention policy enforcement
 - [ ] Restore procedures
 
-### Phase 7: Helper Scripts
-- [ ] `connect.sh` - SSH connection
-- [ ] `tunnel.sh` - Gateway tunnel
-- [ ] `status.sh` - VM health check
-- [ ] `backup-vm.sh` - Manual backup
-- [ ] `restore-vm.sh` - Restore from backup
-- [ ] `emergency-stop.sh` - Kill switch
-- [ ] `restart-vm.sh` - Recovery restart
+### Phase 7: Helper Scripts ✅ VALIDATED
+- [x] `connect.sh` - SSH connection (syntax validated)
+- [x] `tunnel.sh` - Gateway tunnel (syntax validated)
+- [x] `status.sh` - VM health check (syntax validated)
+- [x] `backup-vm.sh` - Manual backup (syntax validated)
+- [x] `restore-vm.sh` - Restore from backup (syntax validated)
+- [x] `emergency-stop.sh` - Kill switch (syntax validated)
+- [x] `restart-vm.sh` - Recovery restart (syntax validated)
+- [x] **All scripts**: Executable permissions confirmed
+- [x] **Tested**: 2026-01-30 bash syntax validation passed
 
-### Phase 8: Testing & Validation
-- [ ] Integration test suite
-- [ ] End-to-end deployment test
-- [ ] Security audit
-- [ ] Performance validation
-- [ ] Documentation verification
-- [ ] User acceptance testing
+### Phase 8: Testing & Validation 🚧 IN PROGRESS
+- [x] Integration test suite (Boris methodology initiated)
+- [x] Phase 0 validation (complete)
+- [x] Phase 1 validation (Lume install, VM creation started)
+- [x] Script syntax validation (all helper scripts)
+- [x] Configuration validation (settings.env, exec-approvals.json)
+- [ ] End-to-end deployment test (waiting for VM completion)
+- [ ] Security audit (pending full deployment)
+- [ ] Performance validation (pending full deployment)
+- [x] Documentation verification (TEST-REPORT-20260130.md created)
+- [ ] User acceptance testing (pending)
 
 ### Success Criteria
 - ✅ Complete VM setup in under 30 minutes

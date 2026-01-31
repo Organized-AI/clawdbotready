@@ -94,7 +94,7 @@ check_macos() {
 }
 
 check_disk_space() {
-    local required_gb=70
+    local required_gb=60
     local available_gb=$(df -g / | awk 'NR==2 {print $4}')
 
     if [[ "$available_gb" -lt "$required_gb" ]]; then
@@ -185,10 +185,10 @@ phase0_verify_environment() {
     local available_gb=$(df -g / | awk 'NR==2 {print $4}')
     info "Available disk space: ${available_gb}GB"
 
-    if [[ "$available_gb" -ge 70 ]]; then
-        success "Disk space OK (70GB+ available)"
+    if [[ "$available_gb" -ge 60 ]]; then
+        success "Disk space OK (60GB+ available)"
     else
-        error "Need at least 70GB free (VM requires ~60GB). Available: ${available_gb}GB"
+        error "Need at least 60GB free (VM requires ~50GB). Available: ${available_gb}GB"
         all_checks_passed=false
     fi
 
@@ -261,30 +261,63 @@ phase1_install_lume() {
 }
 
 install_lume() {
-    info "Downloading Lume installer..."
+    # Try Homebrew first (more reliable)
+    if command -v brew &>/dev/null; then
+        info "Homebrew detected. Installing Lume via Homebrew..."
+
+        if confirm "Install Lume via Homebrew? (Recommended)"; then
+            brew install lume
+
+            if command -v lume &>/dev/null; then
+                success "Lume installed successfully via Homebrew"
+                return 0
+            else
+                warn "Homebrew installation failed, trying alternative method..."
+            fi
+        else
+            info "Homebrew installation declined, trying alternative method..."
+        fi
+    fi
+
+    # Fallback: Download install script
+    info "Downloading Lume installer script..."
 
     local install_script="${SCRIPT_DIR}/logs/lume-install.sh"
-    curl -fsSL https://lume.dev/install.sh -o "$install_script"
+    if curl -fsSL https://lume.dev/install.sh -o "$install_script"; then
+        # Calculate hash for verification
+        local hash=$(shasum -a 256 "$install_script" | awk '{print $1}')
+        info "Installer SHA256: $hash"
 
-    # Calculate hash for verification
-    local hash=$(shasum -a 256 "$install_script" | awk '{print $1}')
-    info "Installer SHA256: $hash"
+        # Check if it's actually a shell script (not HTML)
+        if head -1 "$install_script" | grep -q "^#!"; then
+            # Show user what we're about to run
+            warn "Please review the installer script at: $install_script"
 
-    # Show user what we're about to run
-    warn "Please review the installer script at: $install_script"
+            if confirm "Proceed with Lume installation?"; then
+                info "Installing Lume..."
+                bash "$install_script"
 
-    if confirm "Proceed with Lume installation?"; then
-        info "Installing Lume..."
-        bash "$install_script"
-
-        if command -v lume &>/dev/null; then
-            success "Lume installed successfully"
+                if command -v lume &>/dev/null; then
+                    success "Lume installed successfully"
+                    return 0
+                else
+                    error "Lume installation failed"
+                    exit 1
+                fi
+            else
+                error "Lume installation cancelled"
+                exit 1
+            fi
         else
-            error "Lume installation failed"
+            error "Downloaded file is not a valid shell script (may be HTML redirect)"
+            error "Please install Lume manually:"
+            error "  Option 1 (Recommended): brew install lume"
+            error "  Option 2: Visit https://lume.dev for installation instructions"
             exit 1
         fi
     else
-        error "Lume installation cancelled"
+        error "Failed to download Lume installer"
+        error "Please install Lume manually: brew install lume"
         exit 1
     fi
 }
@@ -311,8 +344,8 @@ create_vm() {
         --os macos \
         --ipsw latest \
         --cpu "$VM_CPU" \
-        --memory "$VM_MEMORY" \
-        --disk "$VM_DISK"
+        --memory "${VM_MEMORY}MB" \
+        --disk-size "$VM_DISK"
 
     success "VM created successfully"
 
