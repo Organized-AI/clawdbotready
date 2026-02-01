@@ -1,0 +1,495 @@
+{
+  "version": "1.0.0",
+  "last_sync": "2026-02-01T12:00:00Z",
+  "sync_sources": {
+    "discord": {
+      "synced_at": null,
+      "channels": [],
+      "status": "disabled"
+    },
+    "skills_hub": {
+      "synced_at": null,
+      "skill_count": 0,
+      "status": "disabled"
+    },
+    "moltbook": {
+      "synced_at": null,
+      "channel_count": 0,
+      "status": "disabled"
+    }
+  },
+  "_comment": "Initial curated data - will be updated by live sync when enabled",
+  "skills": {
+    "trending": [
+      {
+        "id": "calendar-integration",
+        "name": "Calendar Integration",
+        "version": "2.0.0",
+        "description": "Sync appointments, schedule meetings, and manage calendar events through messages",
+        "author": "openclaw-team",
+        "source": "manual",
+        "installs_total": 1250,
+        "installs_7d": 142,
+        "growth_7d": 42.0,
+        "rating": 4.7,
+        "rating_count": 89,
+        "recommended_for": ["sales_outreach", "internal_comms"],
+        "tags": ["calendar", "scheduling", "productivity"],
+        "default_config": {
+          "timezone": "auto",
+          "default_duration": 30
+        }
+      },
+      {
+        "id": "smart-reply-v2",
+        "name": "Smart Reply v2",
+        "version": "2.0.0",
+        "description": "AI-powered contextual responses with tone matching and intent detection",
+        "author": "community",
+        "source": "manual",
+        "installs_total": 340,
+        "installs_7d": 98,
+        "growth_7d": 156.0,
+        "rating": 4.5,
+        "rating_count": 23,
+        "recommended_for": ["customer_support", "sales_outreach"],
+        "tags": ["ai", "responses", "automation"],
+        "default_config": {
+          "tone": "professional",
+          "max_length": 500
+        },
+        "added_at": "2026-01-28T00:00:00Z"
+      }
+    ],
+    "new": [
+      {
+        "id": "smart-reply-v2",
+        "name": "Smart Reply v2",
+        "version": "2.0.0",
+        "description": "AI-powered contextual responses with tone matching and intent detection",
+        "author": "community",
+        "source": "manual",
+        "added_at": "2026-01-28T00:00:00Z",
+        "recommended_for": ["customer_support", "sales_outreach"],
+        "tags": ["ai", "responses", "automation"]
+      },
+      {
+        "id": "sentiment-analysis",
+        "name": "Sentiment Analysis",
+        "version": "1.5.0",
+        "description": "Detect customer mood and emotional state from messages",
+        "author": "openclaw-team",
+        "source": "manual",
+        "added_at": "2026-01-20T00:00:00Z",
+        "recommended_for": ["customer_support"],
+        "tags": ["ai", "sentiment", "analytics"]
+      }
+    ],
+    "popular": [
+      {
+        "id": "ticket-triage",
+        "name": "Ticket Triage",
+        "version": "2.1.0",
+        "description": "Automatically categorize, prioritize, and route incoming support tickets",
+        "author": "openclaw-team",
+        "source": "manual",
+        "installs_total": 2850,
+        "rating": 4.8,
+        "rating_count": 245,
+        "recommended_for": ["customer_support"],
+        "tags": ["support", "automation", "routing"],
+        "default_config": {
+          "priority_levels": 3,
+          "auto_assign": true,
+          "sla_tracking": true
+        }
+      },
+      {
+        "id": "crm-sync",
+        "name": "CRM Sync",
+        "version": "3.0.0",
+        "description": "Bidirectional sync with popular CRMs (Salesforce, HubSpot, Pipedrive)",
+        "author": "openclaw-team",
+        "source": "manual",
+        "installs_total": 2100,
+        "rating": 4.6,
+        "rating_count": 178,
+        "recommended_for": ["sales_outreach"],
+        "tags": ["crm", "integration", "sales"],
+        "default_config": {
+          "sync_interval": 5,
+          "create_contacts": true
+        }
+      },
+      {
+        "id": "knowledge-base-search",
+        "name": "Knowledge Base Search",
+        "version": "3.0.0",
+        "description": "Search and retrieve answers from your knowledge base or documentation",
+        "author": "openclaw-team",
+        "source": "manual",
+        "installs_total": 1890,
+        "rating": 4.5,
+        "rating_count": 156,
+        "recommended_for": ["customer_support", "internal_comms"],
+        "tags": ["search", "knowledge", "documentation"]
+      }
+    ],
+    "by_use_case": {
+      "customer_support": [
+        {
+          "id": "ticket-triage",
+          "name": "Ticket Triage",
+          "version": "2.1.0",
+          "description": "Automatically categorize, prioritize, and route incoming support tickets",
+          "recommended": true
+        },
+        {
+          "id": "sentiment-analysis",
+          "name": "Sentiment Analysis",
+          "version": "1.5.0",
+          "description": "Detect customer mood and emotional state from messages",
+          "recommended": true
+        },
+        {
+          "id": "escalation-rules",
+          "name": "Escalation Rules",
+          "version": "1.2.0",
+          "description": "Automatically escalate to human agents based on triggers",
+          "recommended": false
+        },
+        {
+          "id": "knowledge-base-search",
+          "name": "Knowledge Base Search",
+          "version": "3.0.0",
+          "description": "Search and retrieve answers from your knowledge base",
+          "recommended": false
+        },
+        {
+          "id": "response-templates",
+          "name": "Response Templates",
+          "version": "2.0.0",
+          "description": "Pre-built response templates with variable substitution",
+          "recommended": false
+        },
+        {
+          "id": "smart-reply-v2",
+          "name": "Smart Reply v2",
+          "version": "2.0.0",
+          "description": "AI-powered contextual responses",
+          "recommended": false
+        }
+      ],
+      "sales_outreach": [
+        {
+          "id": "crm-sync",
+          "name": "CRM Sync",
+          "version": "3.0.0",
+          "description": "Bidirectional sync with popular CRMs",
+          "recommended": true
+        },
+        {
+          "id": "calendar-integration",
+          "name": "Calendar Integration",
+          "version": "2.0.0",
+          "description": "Sync appointments and manage calendar events",
+          "recommended": true
+        },
+        {
+          "id": "lead-scoring",
+          "name": "Lead Scoring",
+          "version": "1.0.0",
+          "description": "AI-powered lead qualification and scoring",
+          "recommended": false
+        },
+        {
+          "id": "follow-up-automation",
+          "name": "Follow-Up Automation",
+          "version": "1.5.0",
+          "description": "Automated follow-up sequences with smart timing",
+          "recommended": false
+        },
+        {
+          "id": "smart-reply-v2",
+          "name": "Smart Reply v2",
+          "version": "2.0.0",
+          "description": "AI-powered contextual responses",
+          "recommended": false
+        }
+      ],
+      "internal_comms": [
+        {
+          "id": "calendar-integration",
+          "name": "Calendar Integration",
+          "version": "2.0.0",
+          "description": "Sync appointments and manage calendar events",
+          "recommended": true
+        },
+        {
+          "id": "notification-router",
+          "name": "Notification Router",
+          "version": "1.0.0",
+          "description": "Route notifications to the right team members",
+          "recommended": true
+        },
+        {
+          "id": "channel-bridge",
+          "name": "Channel Bridge",
+          "version": "1.0.0",
+          "description": "Bridge messages between different platforms",
+          "recommended": false
+        },
+        {
+          "id": "knowledge-base-search",
+          "name": "Knowledge Base Search",
+          "version": "3.0.0",
+          "description": "Search internal documentation",
+          "recommended": false
+        }
+      ]
+    }
+  },
+  "best_practices": {
+    "security": [
+      {
+        "id": "ssh-key-auth",
+        "title": "SSH Key-Only Authentication",
+        "description": "Disable password authentication, require Ed25519 SSH keys for all connections",
+        "category": "security",
+        "source": "discord:#security-tips",
+        "author": "openclaw-security-team",
+        "date": "2026-01-15",
+        "priority": "required",
+        "recommended_for": ["customer_support", "sales_outreach", "internal_comms", "custom"],
+        "config": {
+          "SSH_KEY_TYPE": "ed25519",
+          "PASSWORD_AUTH": "no",
+          "MAX_AUTH_TRIES": 3
+        },
+        "verification": {
+          "command": "grep PasswordAuthentication /etc/ssh/sshd_config",
+          "expected": "PasswordAuthentication no"
+        }
+      },
+      {
+        "id": "rate-limiting",
+        "title": "Request Rate Limiting",
+        "description": "Limit incoming requests to prevent abuse and ensure fair usage",
+        "category": "security",
+        "source": "discord:#production",
+        "author": "poweruser#1234",
+        "date": "2026-01-20",
+        "priority": "recommended",
+        "recommended_for": ["customer_support", "sales_outreach", "internal_comms", "custom"],
+        "config": {
+          "GATEWAY_RATE_LIMIT": "60",
+          "RATE_LIMIT_BURST": "100",
+          "RATE_LIMIT_WINDOW": "60"
+        }
+      },
+      {
+        "id": "firewall-localhost",
+        "title": "Localhost-Only Firewall",
+        "description": "Restrict VM network access to localhost connections only via SSH tunnel",
+        "category": "security",
+        "source": "manual",
+        "author": "openclaw-team",
+        "date": "2026-01-01",
+        "priority": "required",
+        "recommended_for": ["customer_support", "sales_outreach", "internal_comms", "custom"],
+        "config": {
+          "FIREWALL_MODE": "localhost_only"
+        }
+      },
+      {
+        "id": "exec-approvals",
+        "title": "Deny-by-Default Command Execution",
+        "description": "Use exec-approvals.json to whitelist only safe commands for AI agent execution",
+        "category": "security",
+        "source": "manual",
+        "author": "openclaw-team",
+        "date": "2026-01-01",
+        "priority": "required",
+        "recommended_for": ["customer_support", "sales_outreach", "internal_comms", "custom"],
+        "config": {
+          "EXEC_APPROVALS_ENABLED": "true"
+        }
+      }
+    ],
+    "performance": [
+      {
+        "id": "memory-optimization",
+        "title": "Memory Optimization Pack",
+        "description": "Optimized memory settings for long-running deployments",
+        "category": "performance",
+        "source": "discord:#production",
+        "author": "poweruser#1234",
+        "date": "2026-01-28",
+        "priority": "optional",
+        "recommended_for": ["customer_support"],
+        "config": {
+          "VM_MEMORY": "8192",
+          "NODE_OPTIONS": "--max-old-space-size=4096"
+        }
+      },
+      {
+        "id": "connection-pooling",
+        "title": "Connection Pooling",
+        "description": "Enable connection pooling for database and external API connections",
+        "category": "performance",
+        "source": "manual",
+        "author": "openclaw-team",
+        "date": "2026-01-15",
+        "priority": "recommended",
+        "recommended_for": ["customer_support", "sales_outreach"],
+        "config": {
+          "DB_POOL_SIZE": "10",
+          "API_POOL_SIZE": "5"
+        }
+      }
+    ],
+    "reliability": [
+      {
+        "id": "auto-backup",
+        "title": "Automated Daily Backups",
+        "description": "Configure automatic daily backups at 2 AM with 7-day retention",
+        "category": "reliability",
+        "source": "manual",
+        "author": "openclaw-team",
+        "date": "2026-01-01",
+        "priority": "recommended",
+        "recommended_for": ["customer_support", "sales_outreach", "internal_comms", "custom"],
+        "config": {
+          "BACKUP_SCHEDULE": "0 2 * * *",
+          "BACKUP_RETENTION_DAYS": "7"
+        }
+      },
+      {
+        "id": "health-monitoring",
+        "title": "Health Monitoring",
+        "description": "Continuous health checks every 5 minutes with alerting",
+        "category": "reliability",
+        "source": "manual",
+        "author": "openclaw-team",
+        "date": "2026-01-01",
+        "priority": "recommended",
+        "recommended_for": ["customer_support", "sales_outreach", "internal_comms", "custom"],
+        "config": {
+          "MONITOR_INTERVAL": "5",
+          "MONITOR_ENABLED": "true"
+        }
+      },
+      {
+        "id": "graceful-shutdown",
+        "title": "Graceful Shutdown Handling",
+        "description": "Properly drain connections and save state before shutdown",
+        "category": "reliability",
+        "source": "discord:#production",
+        "author": "devops-guru#5678",
+        "date": "2026-01-22",
+        "priority": "optional",
+        "recommended_for": ["customer_support"],
+        "config": {
+          "SHUTDOWN_TIMEOUT": "30"
+        }
+      }
+    ],
+    "cost": [
+      {
+        "id": "resource-right-sizing",
+        "title": "Resource Right-Sizing",
+        "description": "Optimize VM resources based on expected load",
+        "category": "cost",
+        "source": "manual",
+        "author": "openclaw-team",
+        "date": "2026-01-15",
+        "priority": "optional",
+        "recommended_for": ["internal_comms"],
+        "config": {
+          "VM_CPU": "2",
+          "VM_MEMORY": "4096"
+        }
+      }
+    ]
+  },
+  "use_case_templates": {
+    "customer_support": {
+      "id": "customer_support",
+      "name": "Customer Support",
+      "description": "Handle inbound customer messages, ticket triage, and support workflows",
+      "skills": ["ticket-triage", "sentiment-analysis"],
+      "practices": ["ssh-key-auth", "rate-limiting", "firewall-localhost", "exec-approvals", "auto-backup", "health-monitoring"],
+      "integrations": {
+        "posthog": true,
+        "monitoring": true,
+        "backup": true
+      },
+      "settings_overrides": {
+        "VM_CPU": "4",
+        "VM_MEMORY": "8192",
+        "GATEWAY_RATE_LIMIT": "120"
+      }
+    },
+    "sales_outreach": {
+      "id": "sales_outreach",
+      "name": "Sales Outreach",
+      "description": "Proactive sales messaging, lead follow-up, and CRM integration",
+      "skills": ["crm-sync", "calendar-integration"],
+      "practices": ["ssh-key-auth", "rate-limiting", "firewall-localhost", "exec-approvals", "auto-backup", "health-monitoring"],
+      "integrations": {
+        "posthog": true,
+        "monitoring": true,
+        "backup": true
+      },
+      "settings_overrides": {
+        "VM_CPU": "4",
+        "VM_MEMORY": "8192"
+      }
+    },
+    "internal_comms": {
+      "id": "internal_comms",
+      "name": "Internal Communications",
+      "description": "Team coordination, notifications, and internal workflow automation",
+      "skills": ["calendar-integration", "notification-router"],
+      "practices": ["ssh-key-auth", "firewall-localhost", "exec-approvals", "auto-backup"],
+      "integrations": {
+        "posthog": true,
+        "monitoring": true
+      },
+      "settings_overrides": {
+        "VM_CPU": "2",
+        "VM_MEMORY": "4096"
+      }
+    }
+  },
+  "changelog": [
+    {
+      "date": "2026-02-01",
+      "type": "new_skill",
+      "description": "Smart Reply v2 added to Skills Hub with improved tone matching",
+      "affected_items": ["smart-reply-v2"],
+      "source": "discord:#skills-showcase"
+    },
+    {
+      "date": "2026-01-28",
+      "type": "updated_practice",
+      "description": "Rate limiting recommendation updated: 60 req/min now standard (was 100)",
+      "affected_items": ["rate-limiting"],
+      "source": "discord:#production"
+    },
+    {
+      "date": "2026-01-20",
+      "type": "new_skill",
+      "description": "Sentiment Analysis v1.5.0 released with improved accuracy",
+      "affected_items": ["sentiment-analysis"],
+      "source": "skills_hub"
+    },
+    {
+      "date": "2026-01-15",
+      "type": "security_advisory",
+      "description": "SSH key-only authentication now required for all production deployments",
+      "affected_items": ["ssh-key-auth"],
+      "source": "discord:#security-tips"
+    }
+  ]
+}

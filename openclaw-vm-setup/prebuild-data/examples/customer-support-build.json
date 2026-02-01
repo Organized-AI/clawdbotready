@@ -1,0 +1,157 @@
+{
+  "$comment": "Example output from Prebuild Wizard - Customer Support use case",
+  "version": "1.0.0",
+  "generated_at": "2026-02-01T14:30:00Z",
+  "knowledge_version": "2026-02-01T12:00:00Z",
+  "use_case": {
+    "type": "customer_support",
+    "template": "high_volume",
+    "description": "High-volume customer support for SaaS product"
+  },
+  "business_info": {
+    "name": "Acme SaaS Inc",
+    "industry": "software",
+    "size": "medium",
+    "expected_volume": "high"
+  },
+  "skills": [
+    {
+      "id": "ticket-triage",
+      "version": "2.1.0",
+      "enabled": true,
+      "config": {
+        "priority_levels": 3,
+        "auto_assign": true,
+        "sla_tracking": true,
+        "categories": ["billing", "technical", "general", "urgent"]
+      }
+    },
+    {
+      "id": "sentiment-analysis",
+      "version": "1.5.0",
+      "enabled": true,
+      "config": {
+        "escalate_on_negative": true,
+        "threshold": 0.3
+      }
+    },
+    {
+      "id": "knowledge-base-search",
+      "version": "3.0.0",
+      "enabled": true,
+      "config": {
+        "source": "https://docs.acme.com",
+        "max_results": 3
+      }
+    }
+  ],
+  "best_practices": [
+    {
+      "id": "ssh-key-auth",
+      "applied": true,
+      "config": {
+        "SSH_KEY_TYPE": "ed25519",
+        "PASSWORD_AUTH": "no",
+        "MAX_AUTH_TRIES": 3
+      }
+    },
+    {
+      "id": "rate-limiting",
+      "applied": true,
+      "config": {
+        "GATEWAY_RATE_LIMIT": "120",
+        "RATE_LIMIT_BURST": "200"
+      }
+    },
+    {
+      "id": "firewall-localhost",
+      "applied": true,
+      "config": {
+        "FIREWALL_MODE": "localhost_only"
+      }
+    },
+    {
+      "id": "exec-approvals",
+      "applied": true,
+      "config": {
+        "EXEC_APPROVALS_ENABLED": "true"
+      }
+    },
+    {
+      "id": "auto-backup",
+      "applied": true,
+      "config": {
+        "BACKUP_SCHEDULE": "0 2 * * *",
+        "BACKUP_RETENTION_DAYS": "14"
+      }
+    },
+    {
+      "id": "health-monitoring",
+      "applied": true,
+      "config": {
+        "MONITOR_INTERVAL": "5",
+        "MONITOR_ENABLED": "true"
+      }
+    },
+    {
+      "id": "memory-optimization",
+      "applied": true,
+      "config": {
+        "VM_MEMORY": "16384",
+        "NODE_OPTIONS": "--max-old-space-size=8192"
+      }
+    }
+  ],
+  "integrations": {
+    "posthog": {
+      "enabled": true,
+      "mode": "cloud",
+      "api_key_env": "POSTHOG_API_KEY",
+      "events": [
+        "ticket_created",
+        "ticket_resolved",
+        "ticket_escalated",
+        "response_sent",
+        "sentiment_detected",
+        "skill_invoked",
+        "error_occurred"
+      ],
+      "feature_flags": [
+        "smart_reply_enabled",
+        "auto_escalation_enabled"
+      ]
+    },
+    "moltbook": {
+      "enabled": false,
+      "entry_channels": [],
+      "auto_join": false
+    },
+    "monitoring": {
+      "enabled": true,
+      "interval_minutes": 5,
+      "alert_channels": ["email", "slack"],
+      "alert_email": "ops@acme.com",
+      "slack_webhook": "https://hooks.slack.com/services/xxx"
+    },
+    "backup": {
+      "enabled": true,
+      "schedule": "0 2 * * *",
+      "retention_days": 14,
+      "destination": "local"
+    }
+  },
+  "settings_overrides": {
+    "VM_NAME": "acme-support-bot",
+    "VM_CPU": "8",
+    "VM_MEMORY": "16384",
+    "VM_DISK": "100GB",
+    "GATEWAY_PORT": "8080",
+    "GATEWAY_RATE_LIMIT": "120"
+  },
+  "metadata": {
+    "wizard_version": "1.0.0",
+    "user_agent": "prebuild-wizard/1.0.0 macOS/15.0",
+    "session_id": "pb_abc123xyz",
+    "duration_seconds": 180
+  }
+}

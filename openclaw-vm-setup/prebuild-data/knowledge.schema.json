@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openclaw.ai/schemas/prebuild-knowledge.json",
+  "title": "Prebuild Knowledge Store",
+  "description": "Aggregated knowledge from Discord, Skills Hub, and Moltbook for OpenClaw prebuild",
+  "type": "object",
+  "required": ["version", "last_sync", "skills", "best_practices"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "const": "1.0.0"
+    },
+    "last_sync": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last data sync"
+    },
+    "sync_sources": {
+      "type": "object",
+      "properties": {
+        "discord": {
+          "type": "object",
+          "properties": {
+            "synced_at": { "type": "string", "format": "date-time" },
+            "channels": { "type": "array", "items": { "type": "string" } },
+            "status": { "enum": ["success", "partial", "failed", "disabled"] }
+          }
+        },
+        "skills_hub": {
+          "type": "object",
+          "properties": {
+            "synced_at": { "type": "string", "format": "date-time" },
+            "skill_count": { "type": "integer" },
+            "status": { "enum": ["success", "partial", "failed", "disabled"] }
+          }
+        },
+        "moltbook": {
+          "type": "object",
+          "properties": {
+            "synced_at": { "type": "string", "format": "date-time" },
+            "channel_count": { "type": "integer" },
+            "status": { "enum": ["success", "partial", "failed", "disabled"] }
+          }
+        }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "trending": {
+          "type": "array",
+          "description": "Skills with highest growth in past 7 days",
+          "items": { "$ref": "#/$defs/skill" }
+        },
+        "new": {
+          "type": "array",
+          "description": "Skills added in past 14 days",
+          "items": { "$ref": "#/$defs/skill" }
+        },
+        "popular": {
+          "type": "array",
+          "description": "All-time most installed skills",
+          "items": { "$ref": "#/$defs/skill" }
+        },
+        "by_use_case": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/skill" }
+          }
+        }
+      }
+    },
+    "best_practices": {
+      "type": "object",
+      "properties": {
+        "security": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/practice" }
+        },
+        "performance": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/practice" }
+        },
+        "reliability": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/practice" }
+        },
+        "cost": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/practice" }
+        }
+      }
+    },
+    "use_case_templates": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/use_case_template" }
+    },
+    "changelog": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/changelog_entry" }
+    }
+  },
+  "$defs": {
+    "skill": {
+      "type": "object",
+      "required": ["id", "name", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "name": { "type": "string" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "description": { "type": "string" },
+        "author": { "type": "string" },
+        "source": { "enum": ["skills_hub", "discord", "moltbook", "manual"] },
+        "source_url": { "type": "string", "format": "uri" },
+        "installs_total": { "type": "integer", "minimum": 0 },
+        "installs_7d": { "type": "integer", "minimum": 0 },
+        "growth_7d": { "type": "number", "description": "Percentage growth in 7 days" },
+        "rating": { "type": "number", "minimum": 0, "maximum": 5 },
+        "rating_count": { "type": "integer", "minimum": 0 },
+        "recommended_for": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "default_config": { "type": "object" },
+        "added_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "practice": {
+      "type": "object",
+      "required": ["id", "title", "category"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "enum": ["security", "performance", "reliability", "cost"] },
+        "source": { "type": "string", "description": "e.g., discord:#security-tips" },
+        "source_url": { "type": "string", "format": "uri" },
+        "author": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "priority": { "enum": ["required", "recommended", "optional"] },
+        "recommended_for": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "config": {
+          "type": "object",
+          "description": "Configuration values to apply"
+        },
+        "scripts": {
+          "type": "array",
+          "description": "Shell commands to run",
+          "items": { "type": "string" }
+        },
+        "verification": {
+          "type": "object",
+          "properties": {
+            "command": { "type": "string" },
+            "expected": { "type": "string" }
+          }
+        }
+      }
+    },
+    "use_case_template": {
+      "type": "object",
+      "required": ["id", "name", "skills", "practices"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "skills": {
+          "type": "array",
+          "items": { "type": "string", "description": "Skill IDs" }
+        },
+        "practices": {
+          "type": "array",
+          "items": { "type": "string", "description": "Practice IDs" }
+        },
+        "integrations": {
+          "type": "object",
+          "properties": {
+            "posthog": { "type": "boolean" },
+            "moltbook": { "type": "boolean" },
+            "monitoring": { "type": "boolean" }
+          }
+        },
+        "settings_overrides": {
+          "type": "object",
+          "description": "Overrides for settings.env"
+        }
+      }
+    },
+    "changelog_entry": {
+      "type": "object",
+      "required": ["date", "type", "description"],
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "type": {
+          "enum": [
+            "new_skill",
+            "updated_skill",
+            "deprecated_skill",
+            "new_practice",
+            "updated_practice",
+            "deprecated_practice",
+            "new_template",
+            "breaking_change",
+            "security_advisory"
+          ]
+        },
+        "description": { "type": "string" },
+        "affected_items": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "source": { "type": "string" },
+        "link": { "type": "string", "format": "uri" }
+      }
+    }
+  }
+}

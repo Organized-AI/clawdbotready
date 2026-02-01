@@ -1,0 +1,111 @@
+{
+  "id": "sales_outreach",
+  "name": "Sales Outreach",
+  "description": "Proactive sales messaging, lead follow-up, meeting scheduling, and CRM integration. Designed for sales teams doing outbound and lead nurturing.",
+  "version": "1.0.0",
+  "target_audience": "Sales teams doing outbound messaging and lead follow-up",
+  "expected_volume": {
+    "low": "< 50 leads/day",
+    "medium": "50-200 leads/day",
+    "high": "> 200 leads/day"
+  },
+  "skills": {
+    "required": [
+      {
+        "id": "crm-sync",
+        "reason": "Essential for tracking lead status and syncing with your CRM"
+      }
+    ],
+    "recommended": [
+      {
+        "id": "calendar-integration",
+        "reason": "Enable prospects to book meetings directly through messages"
+      },
+      {
+        "id": "follow-up-automation",
+        "reason": "Automated follow-up sequences with smart timing"
+      }
+    ],
+    "optional": [
+      {
+        "id": "lead-scoring",
+        "reason": "AI-powered lead qualification to prioritize hot leads"
+      },
+      {
+        "id": "smart-reply-v2",
+        "reason": "Generate personalized responses based on lead context"
+      }
+    ]
+  },
+  "best_practices": {
+    "required": ["ssh-key-auth", "firewall-localhost", "exec-approvals"],
+    "recommended": ["rate-limiting", "auto-backup", "health-monitoring"],
+    "optional": ["connection-pooling"]
+  },
+  "integrations": {
+    "posthog": {
+      "recommended": true,
+      "reason": "Track outreach effectiveness, response rates, and conversion",
+      "events": [
+        "outreach_sent",
+        "response_received",
+        "meeting_booked",
+        "lead_converted",
+        "sequence_completed"
+      ]
+    },
+    "moltbook": {
+      "recommended": false,
+      "reason": "Connect with sales communities for tips and strategies",
+      "suggested_channels": ["#sales-automation", "#lead-gen"]
+    },
+    "monitoring": {
+      "recommended": true,
+      "reason": "Ensure outreach campaigns run smoothly",
+      "suggested_interval": 10
+    }
+  },
+  "settings": {
+    "VM_CPU": "4",
+    "VM_MEMORY": "8192",
+    "GATEWAY_RATE_LIMIT": "60",
+    "MONITOR_INTERVAL": "10"
+  },
+  "onboarding_questions": [
+    {
+      "id": "crm_type",
+      "question": "Which CRM do you use?",
+      "type": "select",
+      "options": ["salesforce", "hubspot", "pipedrive", "other", "none"],
+      "affects": ["crm-sync"]
+    },
+    {
+      "id": "calendar_provider",
+      "question": "Which calendar do you use for scheduling?",
+      "type": "select",
+      "options": ["google", "outlook", "apple", "none"],
+      "affects": ["calendar-integration"]
+    },
+    {
+      "id": "lead_volume",
+      "question": "How many leads do you contact per day?",
+      "type": "select",
+      "options": ["low", "medium", "high"],
+      "affects": ["VM_CPU", "VM_MEMORY"]
+    }
+  ],
+  "success_metrics": {
+    "response_rate": {
+      "target": "> 20%",
+      "posthog_event": "response_received"
+    },
+    "meeting_rate": {
+      "target": "> 5% of outreach",
+      "posthog_event": "meeting_booked"
+    },
+    "conversion_rate": {
+      "target": "> 2%",
+      "posthog_event": "lead_converted"
+    }
+  }
+}

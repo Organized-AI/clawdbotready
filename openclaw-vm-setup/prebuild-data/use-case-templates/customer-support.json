@@ -1,0 +1,113 @@
+{
+  "id": "customer_support",
+  "name": "Customer Support",
+  "description": "Handle inbound customer messages, ticket triage, sentiment detection, and support workflows. Optimized for high-volume support teams.",
+  "version": "1.0.0",
+  "target_audience": "Support teams handling customer inquiries via messaging",
+  "expected_volume": {
+    "low": "< 100 messages/day",
+    "medium": "100-1000 messages/day",
+    "high": "> 1000 messages/day"
+  },
+  "skills": {
+    "required": [
+      {
+        "id": "ticket-triage",
+        "reason": "Core functionality for categorizing and routing incoming support requests"
+      }
+    ],
+    "recommended": [
+      {
+        "id": "sentiment-analysis",
+        "reason": "Detect frustrated customers early for proactive escalation"
+      },
+      {
+        "id": "knowledge-base-search",
+        "reason": "Enable self-service by surfacing relevant documentation"
+      }
+    ],
+    "optional": [
+      {
+        "id": "escalation-rules",
+        "reason": "Automatically escalate based on keywords, sentiment, or wait time"
+      },
+      {
+        "id": "response-templates",
+        "reason": "Pre-built responses for common questions"
+      },
+      {
+        "id": "smart-reply-v2",
+        "reason": "AI-generated contextual responses (use with caution in production)"
+      }
+    ]
+  },
+  "best_practices": {
+    "required": ["ssh-key-auth", "firewall-localhost", "exec-approvals"],
+    "recommended": ["rate-limiting", "auto-backup", "health-monitoring"],
+    "optional": ["memory-optimization", "graceful-shutdown"]
+  },
+  "integrations": {
+    "posthog": {
+      "recommended": true,
+      "reason": "Track response times, resolution rates, and customer satisfaction",
+      "events": [
+        "ticket_created",
+        "ticket_resolved",
+        "ticket_escalated",
+        "response_sent",
+        "sentiment_detected"
+      ]
+    },
+    "moltbook": {
+      "recommended": false,
+      "reason": "Useful for connecting with support communities",
+      "suggested_channels": ["#support-bots", "#customer-success"]
+    },
+    "monitoring": {
+      "recommended": true,
+      "reason": "Critical for production support - detect outages immediately",
+      "suggested_interval": 5
+    }
+  },
+  "settings": {
+    "VM_CPU": "4",
+    "VM_MEMORY": "8192",
+    "GATEWAY_RATE_LIMIT": "120",
+    "MONITOR_INTERVAL": "5"
+  },
+  "onboarding_questions": [
+    {
+      "id": "volume",
+      "question": "What's your expected daily message volume?",
+      "type": "select",
+      "options": ["low", "medium", "high"],
+      "affects": ["VM_CPU", "VM_MEMORY", "GATEWAY_RATE_LIMIT"]
+    },
+    {
+      "id": "human_escalation",
+      "question": "Do you need automatic escalation to human agents?",
+      "type": "boolean",
+      "affects": ["escalation-rules"]
+    },
+    {
+      "id": "knowledge_base",
+      "question": "Do you have an existing knowledge base to connect?",
+      "type": "boolean",
+      "affects": ["knowledge-base-search"]
+    }
+  ],
+  "success_metrics": {
+    "response_time": {
+      "target": "< 30 seconds",
+      "posthog_event": "response_sent"
+    },
+    "resolution_rate": {
+      "target": "> 80% auto-resolved",
+      "posthog_event": "ticket_resolved"
+    },
+    "customer_satisfaction": {
+      "target": "> 4.0/5.0",
+      "posthog_event": "feedback_received"
+    }
+  }
+}

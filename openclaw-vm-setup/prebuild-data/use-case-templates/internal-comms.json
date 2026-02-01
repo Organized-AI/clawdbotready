@@ -1,0 +1,101 @@
+{
+  "id": "internal_comms",
+  "name": "Internal Communications",
+  "description": "Team coordination, notifications, internal workflow automation, and cross-platform messaging. Optimized for internal team use with lower security overhead.",
+  "version": "1.0.0",
+  "target_audience": "Teams needing internal notification routing and coordination",
+  "expected_volume": {
+    "low": "< 50 messages/day",
+    "medium": "50-500 messages/day",
+    "high": "> 500 messages/day"
+  },
+  "skills": {
+    "required": [
+      {
+        "id": "notification-router",
+        "reason": "Core functionality for routing alerts to the right team members"
+      }
+    ],
+    "recommended": [
+      {
+        "id": "calendar-integration",
+        "reason": "Coordinate team meetings and availability"
+      },
+      {
+        "id": "channel-bridge",
+        "reason": "Bridge messages between Slack, Teams, Discord, etc."
+      }
+    ],
+    "optional": [
+      {
+        "id": "knowledge-base-search",
+        "reason": "Help team members find internal documentation quickly"
+      }
+    ]
+  },
+  "best_practices": {
+    "required": ["ssh-key-auth", "firewall-localhost", "exec-approvals"],
+    "recommended": ["auto-backup"],
+    "optional": ["health-monitoring", "resource-right-sizing"]
+  },
+  "integrations": {
+    "posthog": {
+      "recommended": true,
+      "reason": "Understand internal communication patterns and bottlenecks",
+      "events": [
+        "notification_sent",
+        "notification_acknowledged",
+        "channel_message",
+        "search_performed"
+      ]
+    },
+    "moltbook": {
+      "recommended": false,
+      "reason": "Less relevant for internal-only use cases",
+      "suggested_channels": []
+    },
+    "monitoring": {
+      "recommended": false,
+      "reason": "Less critical for internal tools, but useful for larger deployments",
+      "suggested_interval": 15
+    }
+  },
+  "settings": {
+    "VM_CPU": "2",
+    "VM_MEMORY": "4096",
+    "GATEWAY_RATE_LIMIT": "60",
+    "MONITOR_INTERVAL": "15"
+  },
+  "onboarding_questions": [
+    {
+      "id": "platforms",
+      "question": "Which platforms do you need to bridge?",
+      "type": "multiselect",
+      "options": ["slack", "teams", "discord", "email", "sms"],
+      "affects": ["channel-bridge"]
+    },
+    {
+      "id": "team_size",
+      "question": "How large is your team?",
+      "type": "select",
+      "options": ["1-10", "11-50", "51-200", "200+"],
+      "affects": ["VM_CPU", "VM_MEMORY"]
+    },
+    {
+      "id": "on_call",
+      "question": "Do you have on-call rotations that need notifications?",
+      "type": "boolean",
+      "affects": ["notification-router"]
+    }
+  ],
+  "success_metrics": {
+    "delivery_rate": {
+      "target": "> 99%",
+      "posthog_event": "notification_sent"
+    },
+    "acknowledgment_time": {
+      "target": "< 5 minutes",
+      "posthog_event": "notification_acknowledged"
+    }
+  }
+}
