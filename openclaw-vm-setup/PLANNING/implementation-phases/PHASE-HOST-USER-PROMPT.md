@@ -41,7 +41,26 @@ READ: setup.sh             (phase_create_host_user function)
 
 ## Configuration
 
-Set these in `config/settings.env`:
+### Option 1: Unified Naming (Recommended)
+
+Set `INSTANCE_NAME` in `config/settings.env` to automatically configure all names:
+
+```bash
+# Unified naming - one name for everything
+INSTANCE_NAME="clawbot1"
+HOST_USER_PASSWORD="secure-password"  # Still need to set the password
+
+# This automatically sets:
+#   HOST_USER_NAME="clawbot1"
+#   HOST_USER_FULLNAME="Clawbot1 Operator"
+#   VM_NAME="clawbot1-vm"
+#   VM_USER="clawbot1"
+#   SSH key: ~/.ssh/openclaw_clawbot1_ed25519
+```
+
+### Option 2: Individual Configuration
+
+Set each value separately in `config/settings.env`:
 
 ```bash
 # Host User Configuration

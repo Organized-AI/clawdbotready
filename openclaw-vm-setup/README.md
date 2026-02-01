@@ -86,6 +86,25 @@ openclaw-vm-setup/
 
 Edit `config/settings.env` before running setup:
 
+### Unified Naming (Recommended)
+
+Set `INSTANCE_NAME` to automatically configure consistent naming across all components:
+
+```bash
+# Unified naming - one name for everything
+INSTANCE_NAME="clawbot1"
+
+# This automatically sets:
+#   Host user: clawbot1
+#   VM name: clawbot1-vm
+#   VM user: clawbot1
+#   SSH key: ~/.ssh/openclaw_clawbot1_ed25519
+```
+
+### Individual Configuration
+
+Or configure each component separately:
+
 ```bash
 # VM Configuration
 VM_NAME="openclaw-secure"       # VM name
@@ -99,6 +118,12 @@ HOST_USER_NAME="vmoperator"     # Username (leave empty to skip)
 HOST_USER_FULLNAME="VM Operator"
 HOST_USER_PASSWORD=""           # Set before running create-user
 HOST_USER_ADMIN="false"         # true for admin, false for standard
+```
+
+### View Current Configuration
+
+```bash
+./setup.sh config
 ```
 
 ## Usage

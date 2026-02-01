@@ -46,6 +46,13 @@ for arg in "$@"; do
     fi
 done
 
+# Apply unified naming if INSTANCE_NAME is set and no explicit username given
+INSTANCE_NAME="${INSTANCE_NAME:-}"
+if [[ -n "$INSTANCE_NAME" ]] && [[ -z "${HOST_USER_NAME:-}" ]]; then
+    HOST_USER_NAME="$INSTANCE_NAME"
+    HOST_USER_FULLNAME="${HOST_USER_FULLNAME:-$(echo "$INSTANCE_NAME" | sed 's/\b\(.\)/\u\1/g' | tr '-' ' ') Operator}"
+fi
+
 # Defaults
 HOST_USER_NAME="${HOST_USER_NAME:-}"
 HOST_USER_FULLNAME="${HOST_USER_FULLNAME:-}"

@@ -31,7 +31,10 @@ LOG_FILE="${LOG_DIR}/setup-$(date +%Y%m%d_%H%M%S).log"
 VM_CREATION_PID_FILE="${SCRIPT_DIR}/.vm_creation.pid"
 VM_CREATION_LOG="${LOG_DIR}/vm-creation-background.log"
 
-# VM Configuration (will be loaded from settings.env)
+# Unified instance naming (set in settings.env)
+INSTANCE_NAME="${INSTANCE_NAME:-}"
+
+# VM Configuration (will be loaded from settings.env or derived from INSTANCE_NAME)
 VM_NAME="${VM_NAME:-openclaw-secure}"
 VM_CPU="${VM_CPU:-4}"
 VM_MEMORY="${VM_MEMORY:-8192}"
@@ -77,6 +80,88 @@ confirm() {
     response="${response:-$default}"
 
     [[ "$response" =~ ^[Yy] ]]
+}
+
+apply_unified_naming() {
+    # If INSTANCE_NAME is set, derive other names from it
+    # Individual settings can still override the derived values
+
+    if [[ -n "$INSTANCE_NAME" ]]; then
+        info "Using unified instance name: $INSTANCE_NAME"
+
+        # Validate instance name format (lowercase, alphanumeric, hyphens)
+        if [[ ! "$INSTANCE_NAME" =~ ^[a-z][a-z0-9-]*$ ]]; then
+            warn "INSTANCE_NAME should be lowercase letters, numbers, and hyphens"
+            warn "Example: clawbot1, agent-alpha, bot-prod-01"
+        fi
+
+        # Derive VM_NAME if not explicitly set (or using default)
+        if [[ "$VM_NAME" == "openclaw-secure" ]]; then
+            VM_NAME="${INSTANCE_NAME}-vm"
+            info "  VM name: $VM_NAME"
+        fi
+
+        # Derive VM_USER if not explicitly set (or using default)
+        if [[ "$VM_USER" == "clawuser" ]] || [[ "$VM_USER" == "openclaw" ]]; then
+            VM_USER="$INSTANCE_NAME"
+            info "  VM user: $VM_USER"
+        fi
+
+        # Derive HOST_USER_NAME if not explicitly set
+        if [[ -z "$HOST_USER_NAME" ]]; then
+            HOST_USER_NAME="$INSTANCE_NAME"
+            info "  Host user: $HOST_USER_NAME"
+        fi
+
+        # Derive HOST_USER_FULLNAME if not explicitly set
+        if [[ -z "$HOST_USER_FULLNAME" ]]; then
+            # Capitalize first letter of instance name for display
+            local capitalized=$(echo "$INSTANCE_NAME" | sed 's/\b\(.\)/\u\1/g' | tr '-' ' ')
+            HOST_USER_FULLNAME="${capitalized} Operator"
+            info "  Host user full name: $HOST_USER_FULLNAME"
+        fi
+
+        # Update SSH key path to match instance name
+        SSH_KEY_NAME="openclaw_${INSTANCE_NAME}_ed25519"
+        info "  SSH key: ~/.ssh/$SSH_KEY_NAME"
+
+        echo ""
+    fi
+}
+
+show_naming_summary() {
+    # Display current naming configuration
+    echo ""
+    echo "Current Naming Configuration:"
+    echo "=============================="
+    if [[ -n "$INSTANCE_NAME" ]]; then
+        echo "  Instance Name: $INSTANCE_NAME (unified)"
+    else
+        echo "  Instance Name: (not set - using individual names)"
+    fi
+    echo "  Host User:     ${HOST_USER_NAME:-"(not configured)"}"
+    echo "  VM Name:       $VM_NAME"
+    echo "  VM User:       $VM_USER"
+    echo "  SSH Key:       $(get_ssh_key_path)"
+    echo ""
+}
+
+get_ssh_key_path() {
+    # Return the SSH key path, using instance-specific name if available
+    if [[ -n "$INSTANCE_NAME" ]]; then
+        echo "$HOME/.ssh/openclaw_${INSTANCE_NAME}_ed25519"
+    else
+        echo "$HOME/.ssh/openclaw_vm_ed25519"
+    fi
+}
+
+get_ssh_key_name() {
+    # Return just the key filename without path
+    if [[ -n "$INSTANCE_NAME" ]]; then
+        echo "openclaw_${INSTANCE_NAME}_ed25519"
+    else
+        echo "openclaw_vm_ed25519"
+    fi
 }
 
 check_macos() {
@@ -869,7 +954,8 @@ phase2_ssh_hardening() {
 }
 
 generate_ssh_keys() {
-    local key_path="$HOME/.ssh/openclaw_vm_ed25519"
+    local key_path=$(get_ssh_key_path)
+    local key_comment="openclaw-${INSTANCE_NAME:-vm}-access"
 
     if [[ -f "$key_path" ]]; then
         info "SSH key already exists: $key_path"
@@ -877,7 +963,7 @@ generate_ssh_keys() {
     fi
 
     info "Generating Ed25519 SSH key..."
-    ssh-keygen -t ed25519 -a 100 -f "$key_path" -C "openclaw-vm-access" -N ""
+    ssh-keygen -t ed25519 -a 100 -f "$key_path" -C "$key_comment" -N ""
 
     chmod 600 "$key_path"
     chmod 644 "${key_path}.pub"
@@ -887,7 +973,7 @@ generate_ssh_keys() {
 
 copy_ssh_key() {
     local vm_ip="$1"
-    local key_path="$HOME/.ssh/openclaw_vm_ed25519.pub"
+    local key_path="$(get_ssh_key_path).pub"
 
     info "Copying SSH public key to VM..."
 
@@ -933,7 +1019,7 @@ EXPECT_SCRIPT
 
 harden_ssh_config() {
     local vm_ip="$1"
-    local key_path="$HOME/.ssh/openclaw_vm_ed25519"
+    local key_path=$(get_ssh_key_path)
 
     info "Hardening SSH configuration on VM..."
 
@@ -1092,7 +1178,7 @@ phase4_gateway_config() {
     header "Phase 4: OpenClaw Gateway Configuration"
 
     local vm_ip=$(get_vm_ip)
-    local key_path="$HOME/.ssh/openclaw_vm_ed25519"
+    local key_path=$(get_ssh_key_path)
 
     info "Configuring Gateway on VM..."
 
@@ -1175,7 +1261,7 @@ phase5_monitoring() {
     header "Phase 5: Monitoring and Alerting Setup"
 
     local vm_ip=$(get_vm_ip)
-    local key_path="$HOME/.ssh/openclaw_vm_ed25519"
+    local key_path=$(get_ssh_key_path)
 
     # Create monitoring script on VM
     info "Installing monitoring scripts on VM..."
@@ -1226,32 +1312,34 @@ REMOTE_EOF
     info "Setting up host monitoring..."
 
     local host_monitor="${SCRIPT_DIR}/scripts/host-monitor.sh"
-    cat > "$host_monitor" << 'HOST_MONITOR'
+    cat > "$host_monitor" << HOST_MONITOR
 #!/bin/bash
 # Host-side monitoring for OpenClaw VM
+# Instance: ${INSTANCE_NAME:-default}
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VM_IP=$(cat "${SCRIPT_DIR}/.vm_ip" 2>/dev/null)
-KEY_PATH="$HOME/.ssh/openclaw_vm_ed25519"
-LOG_FILE="${SCRIPT_DIR}/logs/host-monitor.log"
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+VM_IP=\$(cat "\${SCRIPT_DIR}/.vm_ip" 2>/dev/null)
+KEY_PATH="$(get_ssh_key_path)"
+VM_USER="${VM_USER}"
+LOG_FILE="\${SCRIPT_DIR}/logs/host-monitor.log"
 
 # Check VM is running
-if ! ping -c 1 -W 2 "$VM_IP" &>/dev/null; then
-    echo "$(date): ALERT - VM not responding" >> "$LOG_FILE"
+if ! ping -c 1 -W 2 "\$VM_IP" &>/dev/null; then
+    echo "\$(date): ALERT - VM not responding" >> "\$LOG_FILE"
     exit 1
 fi
 
 # Check SSH is accessible
-if ! nc -z -w5 "$VM_IP" 22 &>/dev/null; then
-    echo "$(date): ALERT - SSH not accessible" >> "$LOG_FILE"
+if ! nc -z -w5 "\$VM_IP" 22 &>/dev/null; then
+    echo "\$(date): ALERT - SSH not accessible" >> "\$LOG_FILE"
     exit 1
 fi
 
 # Fetch and display VM alerts
-ssh -i "$KEY_PATH" -o ConnectTimeout=10 "${VM_USER:-openclaw}@${VM_IP}" \
-    "tail -20 ~/monitoring/alerts.log 2>/dev/null" >> "$LOG_FILE"
+ssh -i "\$KEY_PATH" -o ConnectTimeout=10 "\${VM_USER}@\${VM_IP}" \\
+    "tail -20 ~/monitoring/alerts.log 2>/dev/null" >> "\$LOG_FILE"
 
-echo "$(date): Host monitor check complete" >> "$LOG_FILE"
+echo "\$(date): Host monitor check complete" >> "\$LOG_FILE"
 HOST_MONITOR
 
     chmod +x "$host_monitor"
@@ -1267,7 +1355,7 @@ phase6_backups() {
     header "Phase 6: Backup Configuration"
 
     local vm_ip=$(get_vm_ip)
-    local key_path="$HOME/.ssh/openclaw_vm_ed25519"
+    local key_path=$(get_ssh_key_path)
     local backup_dir="${SCRIPT_DIR}/backups"
 
     mkdir -p "$backup_dir"
@@ -1279,11 +1367,13 @@ phase6_backups() {
     cat > "$backup_script" << BACKUP_SCRIPT
 #!/bin/bash
 # Backup OpenClaw VM configuration
+# Instance: ${INSTANCE_NAME:-default}
 
 SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
 VM_NAME="${VM_NAME}"
+VM_USER="${VM_USER}"
 VM_IP=\$(cat "\${SCRIPT_DIR}/.vm_ip" 2>/dev/null)
-KEY_PATH="\$HOME/.ssh/openclaw_vm_ed25519"
+KEY_PATH="${key_path}"
 BACKUP_DIR="\${SCRIPT_DIR}/backups"
 DATE=\$(date +%Y%m%d_%H%M%S)
 
@@ -1293,8 +1383,8 @@ echo "Starting backup: \$DATE"
 
 # Backup VM configuration files
 echo "Backing up VM configs..."
-ssh -i "\$KEY_PATH" "${VM_USER}@\${VM_IP}" \
-    "tar czf - ~/.openclaw /etc/ssh/sshd_config 2>/dev/null" > \
+ssh -i "\$KEY_PATH" "\${VM_USER}@\${VM_IP}" \\
+    "tar czf - ~/.openclaw /etc/ssh/sshd_config 2>/dev/null" > \\
     "\${BACKUP_DIR}/config_\${DATE}.tar.gz"
 
 # Create VM snapshot
@@ -1368,6 +1458,9 @@ main() {
         source "$CONFIG_FILE"
         info "Loaded configuration from $CONFIG_FILE"
     fi
+
+    # Apply unified naming if INSTANCE_NAME is set
+    apply_unified_naming
 
     # Pre-flight checks
     check_macos
@@ -1463,6 +1556,9 @@ main() {
         list-users)
             list_host_users
             ;;
+        config|naming)
+            show_naming_summary
+            ;;
         all)
             phase0_verify_environment || exit 1
             phase1_install_lume
@@ -1477,16 +1573,19 @@ main() {
             echo -e "${GREEN}OpenClaw VM is now configured with security hardening.${NC}"
             echo ""
             echo "Quick Reference:"
+            if [[ -n "$INSTANCE_NAME" ]]; then
+                echo "  Instance: $INSTANCE_NAME"
+            fi
             echo "  VM Name: $VM_NAME"
             echo "  VM IP: $(get_vm_ip)"
-            echo "  SSH Key: ~/.ssh/openclaw_vm_ed25519"
+            echo "  SSH Key: $(get_ssh_key_path)"
             echo "  Gateway Token: ${SCRIPT_DIR}/.gateway_token"
             echo ""
             echo "Connect to VM:"
-            echo "  ssh -i ~/.ssh/openclaw_vm_ed25519 ${VM_USER}@$(get_vm_ip)"
+            echo "  ssh -i $(get_ssh_key_path) ${VM_USER}@$(get_vm_ip)"
             echo ""
             echo "Create Gateway tunnel:"
-            echo "  ssh -i ~/.ssh/openclaw_vm_ed25519 -L 8080:127.0.0.1:8080 -N ${VM_USER}@$(get_vm_ip)"
+            echo "  ssh -i $(get_ssh_key_path) -L 8080:127.0.0.1:8080 -N ${VM_USER}@$(get_vm_ip)"
             echo ""
             echo "Backup VM:"
             echo "  ${SCRIPT_DIR}/scripts/backup-vm.sh"
@@ -1503,6 +1602,10 @@ main() {
             echo "  create-user  (alias for user)"
             echo "  delete-user  Delete a host user account"
             echo "  list-users   List all local user accounts"
+            echo ""
+            echo "Configuration:"
+            echo "  config       Show current naming configuration"
+            echo "  naming       (alias for config)"
             echo ""
             echo "Individual Phases:"
             echo "  0 or phase0  Verify environment and prerequisites"
