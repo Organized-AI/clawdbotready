@@ -1,0 +1,266 @@
+{
+  "$schema": "./test-drive.schema.json",
+  "version": "1.0.0",
+  "description": "Test drive system for previewing configured Clawdbot before deployment",
+
+  "concept": {
+    "purpose": "Allow business owners to 'test drive' their configured bot personality and capabilities before they have access to the actual deployment",
+    "analogy": "Like sitting in a configured car at the dealership, or seeing a tailored suit on a mannequin with your measurements",
+    "value": [
+      "Reduces buyer uncertainty",
+      "Validates configuration choices before commitment",
+      "Creates emotional connection with the product",
+      "Identifies configuration issues early",
+      "Differentiates from competitors who just deploy blindly"
+    ]
+  },
+
+  "test_drive_modes": {
+    "live_preview": {
+      "name": "Live Preview Chat",
+      "description": "Interactive chat window that simulates how the configured bot will respond",
+      "features": [
+        "Real-time responses based on personality config",
+        "Uses actual AI with configured persona",
+        "Shows how greetings, clarifications, apologies will sound",
+        "Limited to preview scenarios (not full deployment)"
+      ],
+      "implementation": "Lightweight API endpoint that wraps Claude/OpenAI with system prompt generated from personality config",
+      "session_limits": {
+        "messages_per_session": 20,
+        "sessions_per_config": 5
+      }
+    },
+
+    "scenario_playback": {
+      "name": "Scenario Playback",
+      "description": "Pre-recorded conversation scripts showing the bot in common situations",
+      "scenarios": [
+        {
+          "id": "first_contact",
+          "name": "First Customer Contact",
+          "description": "New customer reaches out for the first time",
+          "turns": [
+            { "role": "customer", "message": "Hi, I have a question" },
+            { "role": "bot", "message": "{{generated_greeting}}" },
+            { "role": "customer", "message": "I'm looking for help with {{product}}" },
+            { "role": "bot", "message": "{{generated_helpful_response}}" }
+          ]
+        },
+        {
+          "id": "frustrated_customer",
+          "name": "Handling Frustration",
+          "description": "Customer is upset about an issue",
+          "turns": [
+            { "role": "customer", "message": "This is ridiculous! I've been waiting for days!" },
+            { "role": "bot", "message": "{{generated_empathy_response}}" },
+            { "role": "customer", "message": "I just want this fixed" },
+            { "role": "bot", "message": "{{generated_resolution_response}}" }
+          ]
+        },
+        {
+          "id": "product_inquiry",
+          "name": "Product Questions",
+          "description": "Customer asking about products/services",
+          "turns": [
+            { "role": "customer", "message": "What do you offer?" },
+            { "role": "bot", "message": "{{generated_product_overview}}" },
+            { "role": "customer", "message": "How much does it cost?" },
+            { "role": "bot", "message": "{{generated_pricing_response}}" }
+          ]
+        },
+        {
+          "id": "escalation",
+          "name": "Escalation to Human",
+          "description": "Situation requiring human handoff",
+          "turns": [
+            { "role": "customer", "message": "I need to speak with a manager" },
+            { "role": "bot", "message": "{{generated_escalation_response}}" }
+          ]
+        },
+        {
+          "id": "after_hours",
+          "name": "After Hours",
+          "description": "Customer contacts outside business hours",
+          "turns": [
+            { "role": "customer", "message": "Hello?" },
+            { "role": "bot", "message": "{{configured_after_hours_message}}" }
+          ]
+        }
+      ]
+    },
+
+    "comparison_view": {
+      "name": "Side-by-Side Comparison",
+      "description": "Show how the same scenario plays out with different personality settings",
+      "use_case": "Help business owner decide between personality options",
+      "layout": {
+        "left": "Current configuration",
+        "right": "Alternative configuration"
+      },
+      "example": {
+        "scenario": "Customer complaint",
+        "left_config": { "style": "professional", "warmth": 5 },
+        "left_response": "I apologize for the inconvenience. Let me look into this matter and provide you with a resolution.",
+        "right_config": { "style": "empathetic", "warmth": 9 },
+        "right_response": "Oh no, I'm so sorry you're dealing with this! That sounds really frustrating. Let me help make this right for you."
+      }
+    },
+
+    "voice_samples": {
+      "name": "Voice Sample Gallery",
+      "description": "Quick samples showing bot voice in different situations",
+      "categories": [
+        {
+          "name": "Greetings",
+          "samples": ["first_hello", "returning_customer", "referred_customer"]
+        },
+        {
+          "name": "Problem Solving",
+          "samples": ["asking_clarification", "providing_solution", "admitting_limitation"]
+        },
+        {
+          "name": "Difficult Situations",
+          "samples": ["handling_complaint", "delivering_bad_news", "saying_no_nicely"]
+        },
+        {
+          "name": "Closing",
+          "samples": ["successful_resolution", "escalation_handoff", "follow_up_promise"]
+        }
+      ]
+    }
+  },
+
+  "preview_report": {
+    "name": "Configuration Summary Report",
+    "description": "PDF/printable summary of the configured bot for stakeholder review",
+    "sections": [
+      {
+        "name": "Identity Card",
+        "content": ["Bot name", "Avatar", "Tagline", "Personality summary"]
+      },
+      {
+        "name": "Voice Examples",
+        "content": ["Sample greetings", "Sample responses", "Escalation language"]
+      },
+      {
+        "name": "Capabilities",
+        "content": ["Installed skills", "Integrations", "What it can/cannot do"]
+      },
+      {
+        "name": "Business Context",
+        "content": ["Company info loaded", "Products/services", "Brand keywords"]
+      },
+      {
+        "name": "Behavior Rules",
+        "content": ["Topics avoided", "Escalation triggers", "Response limits"]
+      }
+    ],
+    "format": ["pdf", "html", "markdown"],
+    "shareable": true,
+    "use_case": "Share with stakeholders for approval before deployment"
+  },
+
+  "a_b_testing": {
+    "name": "A/B Personality Testing",
+    "description": "Create multiple personality variants and compare them",
+    "workflow": [
+      "Create Variant A (e.g., Professional)",
+      "Create Variant B (e.g., Friendly)",
+      "Run same test scenarios on both",
+      "Compare side-by-side",
+      "Choose winner or blend elements"
+    ],
+    "metrics_to_compare": [
+      "Response warmth",
+      "Clarity of information",
+      "Brand alignment",
+      "Likelihood customer would continue"
+    ]
+  },
+
+  "customer_simulation": {
+    "name": "Customer Simulation",
+    "description": "AI-powered customer personas for testing",
+    "personas": [
+      {
+        "id": "new_curious",
+        "name": "New & Curious",
+        "description": "First-time visitor, asking basic questions",
+        "traits": ["polite", "uncertain", "exploratory"]
+      },
+      {
+        "id": "returning_happy",
+        "name": "Happy Returning Customer",
+        "description": "Previous customer with a simple question",
+        "traits": ["familiar", "positive", "brief"]
+      },
+      {
+        "id": "frustrated_urgent",
+        "name": "Frustrated & Urgent",
+        "description": "Customer with a problem who is upset",
+        "traits": ["impatient", "emotional", "demanding"]
+      },
+      {
+        "id": "technical_detailed",
+        "name": "Technical & Detailed",
+        "description": "Customer who wants specifics",
+        "traits": ["precise", "knowledgeable", "thorough"]
+      },
+      {
+        "id": "tire_kicker",
+        "name": "Just Browsing",
+        "description": "Not ready to buy, just looking",
+        "traits": ["casual", "noncommittal", "curious"]
+      }
+    ],
+    "run_simulation": {
+      "select_persona": "Choose customer type to simulate",
+      "watch_conversation": "See how your bot handles this customer type",
+      "identify_issues": "Spot where personality config might need adjustment"
+    }
+  },
+
+  "feedback_collection": {
+    "name": "Test Drive Feedback",
+    "description": "Collect business owner's impressions during test drive",
+    "prompts": [
+      {
+        "after_scenario": "first_contact",
+        "question": "Did this greeting sound right for your brand?",
+        "options": ["Perfect", "Too formal", "Too casual", "Needs tweaking"]
+      },
+      {
+        "after_scenario": "frustrated_customer",
+        "question": "Was the empathy level appropriate?",
+        "options": ["Just right", "Too much", "Not enough"]
+      },
+      {
+        "after_all": "overall",
+        "question": "On a scale of 1-10, how well does this match your vision?",
+        "action_if_low": "Offer to adjust personality sliders"
+      }
+    ]
+  },
+
+  "implementation_notes": {
+    "preview_api": {
+      "description": "Lightweight endpoint for test drive conversations",
+      "approach": "Generate system prompt from personality config, use Claude API with strict limits",
+      "cost_control": [
+        "Token limits per message",
+        "Session limits per configuration",
+        "Cache common responses"
+      ]
+    },
+    "offline_mode": {
+      "description": "Generate all preview content at config time",
+      "approach": "Pre-generate responses for all scenarios, store in config",
+      "benefit": "No API calls needed during actual test drive"
+    },
+    "hybrid": {
+      "description": "Pre-generate common scenarios, allow limited live chat",
+      "approach": "Best of both worlds - fast playback plus interactive exploration"
+    }
+  }
+}

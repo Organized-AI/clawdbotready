@@ -2,10 +2,74 @@
 
 ## Executive Summary
 
-A **guided onboarding wizard** that enables business owners to configure OpenClaw deployments with real-time community knowledge, curated skills, and best practices before deployment. Think of it as a "build-your-own" experience with live data from the OpenClaw ecosystem.
+A **white-glove configuration system** that enables business owners to fully customize their Clawdbot before deployment - including name, personality, skills, integrations, and business context. Like tailoring a suit or configuring a vehicle to spec, customers design their AI assistant before receiving it, ensuring a perfect plug-and-play experience.
 
-**Target User**: Business owners deploying OpenClaw for commercial use
-**Core Value**: Eliminate knowledge barriers by surfacing what works right now
+**Business Model**: SetupClaw (https://setupclaw.com/) - pre-configured Mac Mini hardware shipped with ready-to-use Clawdbot instances.
+
+**Target User**: Business owners purchasing AI assistants for commercial use
+**Core Value**: Plug in, log in, your personalized AI assistant is already running
+
+---
+
+## Related Documents
+
+- **[SETUPCLAW-SERVICE-MODEL.md](./SETUPCLAW-SERVICE-MODEL.md)** - Full service model and operations
+- **Personality Configuration** - `openclaw-vm-setup/prebuild-data/schemas/personality-config.schema.json`
+- **Test Drive System** - `openclaw-vm-setup/prebuild-data/schemas/test-drive.schema.json`
+- **Onboarding Flow** - `openclaw-vm-setup/prebuild-data/onboarding-flow.md`
+
+---
+
+## What Makes This Different
+
+| Traditional Setup | Prebuild (SetupClaw) |
+|-------------------|----------------------|
+| Customer figures it out | We configure it for them |
+| Generic bot out of the box | Personalized bot from day one |
+| Tech knowledge required | Business owner friendly |
+| Hours of configuration | Minutes of conversation |
+| Hope it works | Test drive before shipping |
+| Self-service only | White-glove option available |
+
+---
+
+## Core Configuration Areas
+
+### 1. Bot Identity & Personality
+- **Name**: What customers call the bot (Alex, Luna, Max, etc.)
+- **Greeting**: First message customers see
+- **Communication style**: Professional, friendly, casual, empathetic
+- **Tone sliders**: Warmth, formality, enthusiasm, verbosity
+- **Emoji usage**: None, minimal, moderate, frequent
+
+### 2. Business Context
+- Company name and description
+- Industry (for smart defaults)
+- Products/services offered
+- Brand keywords and voice
+- Unique value proposition
+
+### 3. Capabilities
+- **Skills**: Ticket triage, sentiment analysis, calendar, CRM sync, etc.
+- **Plugins**: Extended functionality
+- **Hooks**: Custom automation triggers
+- **Integrations**: PostHog, Moltbook, Slack, etc.
+
+### 4. Behavior Rules
+- Topics to avoid
+- Escalation triggers
+- Promise-making permissions
+- Operating hours
+- After-hours messaging
+
+### 5. Interface Points
+- Primary channel (iMessage, SMS, web, WhatsApp)
+- Secondary channels
+- Multi-channel setup
+
+---
+
+## Feature Overview: Technical Implementation
 
 ---
 
