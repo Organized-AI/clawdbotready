@@ -6,7 +6,8 @@
 # Target: M4 Mac Mini (fresh machine)
 #
 # Usage: ./setup.sh [command]
-#   Recommended: start → continue (async workflow)
+#   Recommended: user → start → continue (async workflow with dedicated user)
+#   user: Create a dedicated macOS user for VM access
 #   start: Verify environment + create VM in background
 #   continue: Complete setup after VM creation
 #   all: Run all phases sequentially (default)
@@ -217,6 +218,395 @@ start_vm_creation_background() {
     info "Monitor progress: tail -f $VM_CREATION_LOG"
     info "Check status: ./status.sh"
     info "Continue setup when ready: ./setup.sh continue"
+}
+
+#===============================================================================
+# Host User Creation (Optional pre-phase)
+#===============================================================================
+# Creates a dedicated macOS user on the HOST machine for VM access
+# This user will log in via Screen Sharing to manage the VM
+
+# Host user configuration (loaded from settings.env)
+HOST_USER_NAME="${HOST_USER_NAME:-}"
+HOST_USER_FULLNAME="${HOST_USER_FULLNAME:-}"
+HOST_USER_PASSWORD="${HOST_USER_PASSWORD:-}"
+HOST_USER_ADMIN="${HOST_USER_ADMIN:-false}"
+HOST_USER_AUTOLOGIN="${HOST_USER_AUTOLOGIN:-false}"
+HOST_USER_SHELL="${HOST_USER_SHELL:-/bin/zsh}"
+
+check_user_exists() {
+    local username="$1"
+    dscl . -read /Users/"$username" &>/dev/null
+}
+
+get_next_uid() {
+    # Find the next available UID starting from 501 (first non-system user)
+    local max_uid=$(dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1)
+    echo $((max_uid + 1))
+}
+
+phase_create_host_user() {
+    header "Host User Creation"
+
+    # Check if configuration is provided
+    if [[ -z "$HOST_USER_NAME" ]]; then
+        echo ""
+        echo "No host user configured in settings.env"
+        echo ""
+        echo "To create a dedicated user for VM access, configure these in config/settings.env:"
+        echo "  HOST_USER_NAME=\"vmoperator\""
+        echo "  HOST_USER_FULLNAME=\"VM Operator\""
+        echo "  HOST_USER_PASSWORD=\"your-secure-password\""
+        echo ""
+
+        if confirm "Would you like to configure a new user interactively?"; then
+            configure_host_user_interactive
+        else
+            info "Skipping host user creation"
+            return 0
+        fi
+    fi
+
+    # Validate required fields
+    if [[ -z "$HOST_USER_NAME" ]]; then
+        error "HOST_USER_NAME is required"
+        return 1
+    fi
+
+    if [[ -z "$HOST_USER_PASSWORD" ]]; then
+        error "HOST_USER_PASSWORD is required"
+        return 1
+    fi
+
+    # Set fullname to username if not provided
+    HOST_USER_FULLNAME="${HOST_USER_FULLNAME:-$HOST_USER_NAME}"
+
+    # Check if user already exists
+    if check_user_exists "$HOST_USER_NAME"; then
+        warn "User '$HOST_USER_NAME' already exists"
+
+        if confirm "Show existing user details?"; then
+            echo ""
+            dscl . -read /Users/"$HOST_USER_NAME" RealName UniqueID PrimaryGroupID NFSHomeDirectory UserShell 2>/dev/null || true
+            echo ""
+        fi
+
+        if ! confirm "Continue with existing user (no changes will be made)?"; then
+            return 1
+        fi
+
+        success "Using existing user: $HOST_USER_NAME"
+        return 0
+    fi
+
+    info "Creating new macOS user: $HOST_USER_NAME"
+    info "  Full Name: $HOST_USER_FULLNAME"
+    info "  Admin: $HOST_USER_ADMIN"
+    info "  Shell: $HOST_USER_SHELL"
+
+    echo ""
+    warn "This operation requires administrator privileges."
+    echo ""
+
+    if ! confirm "Create user '$HOST_USER_NAME'?"; then
+        info "User creation cancelled"
+        return 0
+    fi
+
+    create_macos_user
+}
+
+configure_host_user_interactive() {
+    echo ""
+    echo "Interactive Host User Configuration"
+    echo "===================================="
+    echo ""
+
+    # Username
+    while [[ -z "$HOST_USER_NAME" ]]; do
+        read -p "Username (lowercase, no spaces): " HOST_USER_NAME
+
+        # Validate username format
+        if [[ ! "$HOST_USER_NAME" =~ ^[a-z][a-z0-9_-]*$ ]]; then
+            error "Invalid username. Use lowercase letters, numbers, underscore, hyphen. Must start with letter."
+            HOST_USER_NAME=""
+            continue
+        fi
+
+        # Check for reserved names
+        if [[ "$HOST_USER_NAME" =~ ^(root|daemon|nobody|admin|guest|_).*$ ]]; then
+            error "Reserved username. Choose a different name."
+            HOST_USER_NAME=""
+            continue
+        fi
+
+        # Check if exists
+        if check_user_exists "$HOST_USER_NAME"; then
+            warn "User '$HOST_USER_NAME' already exists"
+            if confirm "Use existing user?"; then
+                return 0
+            fi
+            HOST_USER_NAME=""
+        fi
+    done
+
+    # Full name
+    read -p "Full Name [$HOST_USER_NAME]: " HOST_USER_FULLNAME
+    HOST_USER_FULLNAME="${HOST_USER_FULLNAME:-$HOST_USER_NAME}"
+
+    # Password
+    while [[ -z "$HOST_USER_PASSWORD" ]]; do
+        read -sp "Password: " HOST_USER_PASSWORD
+        echo ""
+
+        if [[ ${#HOST_USER_PASSWORD} -lt 8 ]]; then
+            error "Password must be at least 8 characters"
+            HOST_USER_PASSWORD=""
+            continue
+        fi
+
+        read -sp "Confirm Password: " password_confirm
+        echo ""
+
+        if [[ "$HOST_USER_PASSWORD" != "$password_confirm" ]]; then
+            error "Passwords do not match"
+            HOST_USER_PASSWORD=""
+        fi
+    done
+
+    # Admin privileges
+    if confirm "Grant admin privileges? (recommended: No for security)"; then
+        HOST_USER_ADMIN="true"
+    else
+        HOST_USER_ADMIN="false"
+    fi
+
+    # Summary
+    echo ""
+    echo "User Configuration Summary"
+    echo "=========================="
+    echo "  Username: $HOST_USER_NAME"
+    echo "  Full Name: $HOST_USER_FULLNAME"
+    echo "  Admin: $HOST_USER_ADMIN"
+    echo "  Shell: $HOST_USER_SHELL"
+    echo ""
+}
+
+create_macos_user() {
+    info "Creating macOS user account..."
+
+    # Use sysadminctl for modern macOS (10.13+)
+    # This is the recommended method for programmatic user creation
+
+    local admin_flag=""
+    if [[ "$HOST_USER_ADMIN" == "true" ]]; then
+        admin_flag="-admin"
+    fi
+
+    # Create the user with sysadminctl
+    # This handles UID assignment, home directory creation, and password setting
+    if sudo sysadminctl -addUser "$HOST_USER_NAME" \
+        -fullName "$HOST_USER_FULLNAME" \
+        -password "$HOST_USER_PASSWORD" \
+        -shell "$HOST_USER_SHELL" \
+        $admin_flag 2>&1; then
+
+        success "User '$HOST_USER_NAME' created successfully"
+    else
+        error "Failed to create user with sysadminctl"
+        info "Attempting alternative method with dscl..."
+
+        create_macos_user_dscl
+        return $?
+    fi
+
+    # Verify user was created
+    if ! check_user_exists "$HOST_USER_NAME"; then
+        error "User creation verification failed"
+        return 1
+    fi
+
+    # Get the created user's UID
+    local user_uid=$(dscl . -read /Users/"$HOST_USER_NAME" UniqueID | awk '{print $2}')
+    info "User created with UID: $user_uid"
+
+    # Enable Screen Sharing access for the new user
+    enable_screen_sharing_access
+
+    # Configure auto-login if requested
+    if [[ "$HOST_USER_AUTOLOGIN" == "true" ]]; then
+        configure_autologin
+    fi
+
+    # Show login instructions
+    echo ""
+    success "Host user '$HOST_USER_NAME' is ready!"
+    echo ""
+    echo "Next Steps:"
+    echo "  1. Log out of current session"
+    echo "  2. Log in as '$HOST_USER_NAME'"
+    echo "  3. Access VM via Screen Sharing (Cmd+K in Finder → vnc://\$VM_IP)"
+    echo "  4. Or use: open vnc://\$VM_IP from Terminal"
+    echo ""
+
+    return 0
+}
+
+create_macos_user_dscl() {
+    # Fallback method using dscl (Directory Services command line)
+    # This is more manual but works on older macOS versions
+
+    info "Creating user with dscl..."
+
+    local uid=$(get_next_uid)
+    local gid=20  # staff group
+    local home="/Users/$HOST_USER_NAME"
+
+    # Create user entry
+    sudo dscl . -create /Users/"$HOST_USER_NAME" || return 1
+    sudo dscl . -create /Users/"$HOST_USER_NAME" UserShell "$HOST_USER_SHELL" || return 1
+    sudo dscl . -create /Users/"$HOST_USER_NAME" RealName "$HOST_USER_FULLNAME" || return 1
+    sudo dscl . -create /Users/"$HOST_USER_NAME" UniqueID "$uid" || return 1
+    sudo dscl . -create /Users/"$HOST_USER_NAME" PrimaryGroupID "$gid" || return 1
+    sudo dscl . -create /Users/"$HOST_USER_NAME" NFSHomeDirectory "$home" || return 1
+
+    # Set password
+    sudo dscl . -passwd /Users/"$HOST_USER_NAME" "$HOST_USER_PASSWORD" || return 1
+
+    # Add to admin group if requested
+    if [[ "$HOST_USER_ADMIN" == "true" ]]; then
+        sudo dscl . -append /Groups/admin GroupMembership "$HOST_USER_NAME" || true
+    fi
+
+    # Create home directory
+    sudo createhomedir -c -u "$HOST_USER_NAME" 2>/dev/null || {
+        # Manual home directory creation if createhomedir fails
+        sudo mkdir -p "$home"
+        sudo chown "$HOST_USER_NAME":staff "$home"
+        sudo chmod 755 "$home"
+    }
+
+    success "User created with dscl method"
+    return 0
+}
+
+enable_screen_sharing_access() {
+    info "Configuring Screen Sharing access..."
+
+    # Enable Screen Sharing (VNC) system-wide if not already enabled
+    # This modifies the com.apple.screensharing preference
+
+    # Check if Screen Sharing is enabled
+    local sharing_status=$(sudo launchctl list 2>/dev/null | grep "com.apple.screensharing" || echo "")
+
+    if [[ -z "$sharing_status" ]]; then
+        info "Enabling Screen Sharing service..."
+        sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.screensharing.plist 2>/dev/null || {
+            # On newer macOS, use different method
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+                -activate -configure -access -on -restart -agent -privs -all 2>/dev/null || true
+        }
+    fi
+
+    # Add user to access list for Screen Sharing
+    # This uses the screensharing binary's user list
+
+    # On macOS Ventura+, users are managed via System Settings
+    # We can add them to the access list via dscl
+    if [[ "$HOST_USER_ADMIN" != "true" ]]; then
+        # For non-admin users, we need to explicitly grant screen sharing access
+        # This adds the user to the com.apple.access_screensharing group
+
+        # First, ensure the group exists
+        if dscl . -read /Groups/com.apple.access_screensharing &>/dev/null; then
+            sudo dscl . -append /Groups/com.apple.access_screensharing GroupMembership "$HOST_USER_NAME" 2>/dev/null || true
+        fi
+    fi
+
+    success "Screen Sharing access configured"
+}
+
+configure_autologin() {
+    warn "Configuring auto-login (reduces security)..."
+
+    # Auto-login configuration requires modifying /etc/kcpassword
+    # This is a security risk and should be used with caution
+
+    # On modern macOS, you can set auto-login via:
+    # 1. System Preferences/Settings UI
+    # 2. defaults write /Library/Preferences/com.apple.loginwindow
+
+    # Set the auto-login user
+    sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser "$HOST_USER_NAME"
+
+    # Note: The password needs to be stored in /etc/kcpassword
+    # This requires XOR encoding - for security, we'll advise manual setup
+
+    warn "Auto-login user set, but password must be configured manually:"
+    echo "  1. Open System Settings → Users & Groups → Login Options"
+    echo "  2. Enable 'Automatic login' for user: $HOST_USER_NAME"
+    echo ""
+}
+
+delete_host_user() {
+    header "Delete Host User"
+
+    if [[ -z "$HOST_USER_NAME" ]]; then
+        read -p "Enter username to delete: " HOST_USER_NAME
+    fi
+
+    if [[ -z "$HOST_USER_NAME" ]]; then
+        error "No username specified"
+        return 1
+    fi
+
+    if ! check_user_exists "$HOST_USER_NAME"; then
+        error "User '$HOST_USER_NAME' does not exist"
+        return 1
+    fi
+
+    warn "This will DELETE user '$HOST_USER_NAME' and optionally their home folder!"
+    echo ""
+
+    if ! confirm "Delete user '$HOST_USER_NAME'? This cannot be undone!"; then
+        info "Deletion cancelled"
+        return 0
+    fi
+
+    local delete_home=""
+    if confirm "Also delete home folder /Users/$HOST_USER_NAME?"; then
+        delete_home="-deleteHomeDir"
+    fi
+
+    info "Deleting user '$HOST_USER_NAME'..."
+
+    if sudo sysadminctl -deleteUser "$HOST_USER_NAME" $delete_home 2>&1; then
+        success "User '$HOST_USER_NAME' deleted"
+    else
+        error "Failed to delete user"
+        return 1
+    fi
+}
+
+list_host_users() {
+    header "Local User Accounts"
+
+    echo "Username            UID     Admin   Home Directory"
+    echo "----------------    -----   -----   --------------------------"
+
+    # List all users with UID >= 500 (non-system users)
+    dscl . -list /Users UniqueID | while read username uid; do
+        if [[ "$uid" -ge 500 ]] && [[ "$username" != "_"* ]]; then
+            local is_admin="No"
+            if dscl . -read /Groups/admin GroupMembership 2>/dev/null | grep -qw "$username"; then
+                is_admin="Yes"
+            fi
+            local home=$(dscl . -read /Users/"$username" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
+            printf "%-18s  %-6s  %-5s   %s\n" "$username" "$uid" "$is_admin" "$home"
+        fi
+    done
+
+    echo ""
 }
 
 #===============================================================================
@@ -1064,6 +1454,15 @@ main() {
         6|phase6)
             phase6_backups
             ;;
+        user|create-user)
+            phase_create_host_user
+            ;;
+        delete-user)
+            delete_host_user
+            ;;
+        list-users)
+            list_host_users
+            ;;
         all)
             phase0_verify_environment || exit 1
             phase1_install_lume
@@ -1099,6 +1498,12 @@ main() {
             echo "  start        Quick start - verify environment + create VM in background"
             echo "  continue     Continue after VM creation - run all remaining phases"
             echo ""
+            echo "Host User Management:"
+            echo "  user         Create a dedicated macOS user for VM access"
+            echo "  create-user  (alias for user)"
+            echo "  delete-user  Delete a host user account"
+            echo "  list-users   List all local user accounts"
+            echo ""
             echo "Individual Phases:"
             echo "  0 or phase0  Verify environment and prerequisites"
             echo "  1 or phase1  Install Lume and create VM"
@@ -1109,7 +1514,14 @@ main() {
             echo "  6 or phase6  Configure backups"
             echo "  all          Run all phases sequentially (default)"
             echo ""
-            echo "Example:"
+            echo "Example Workflows:"
+            echo "  # Create dedicated user, then setup VM"
+            echo "  ./setup.sh user     # Create VM operator account"
+            echo "  # Log out and log in as new user, then:"
+            echo "  ./setup.sh start    # Start VM creation"
+            echo "  ./setup.sh continue # Complete setup when VM ready"
+            echo ""
+            echo "  # Quick start (no dedicated user)"
             echo "  ./setup.sh start    # Start VM creation, do other work"
             echo "  ./setup.sh continue # Complete setup when VM ready"
             exit 1

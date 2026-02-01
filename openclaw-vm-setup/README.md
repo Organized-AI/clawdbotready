@@ -21,8 +21,30 @@ This toolkit automates the secure deployment of OpenClaw in an isolated macOS VM
 # 2. Make scripts executable
 chmod +x setup.sh scripts/*.sh
 
-# 3. Run full setup
+# 3. (Optional) Create a dedicated user for VM management
+./setup.sh create-user
+# Log out and log in as the new user
+
+# 4. Run full setup
 ./setup.sh all
+```
+
+### Recommended Workflow (Async)
+
+For large VM downloads (~25 minutes), use the async workflow:
+
+```bash
+# Create dedicated VM operator account (optional but recommended)
+./setup.sh create-user
+
+# Start VM creation in background
+./setup.sh start
+
+# Do other work while VM downloads...
+# Monitor: tail -f logs/vm-creation-background.log
+
+# When VM is ready, complete setup
+./setup.sh continue
 ```
 
 ## What It Does
@@ -47,6 +69,7 @@ openclaw-vm-setup/
 │   ├── settings.env            # Customize VM settings here
 │   └── exec-approvals.json     # Command allowlist (security)
 ├── scripts/
+│   ├── create-user.sh          # Create dedicated macOS user
 │   ├── connect.sh              # SSH into VM
 │   ├── tunnel.sh               # Create Gateway tunnel
 │   ├── status.sh               # Check VM status
@@ -64,14 +87,41 @@ openclaw-vm-setup/
 Edit `config/settings.env` before running setup:
 
 ```bash
+# VM Configuration
 VM_NAME="openclaw-secure"       # VM name
 VM_CPU="4"                      # CPU cores for VM
 VM_MEMORY="8192"                # RAM in MB
 VM_DISK="60G"                   # Disk size
 VM_USER="openclaw"              # VM user account
+
+# Host User (optional - for dedicated VM access account)
+HOST_USER_NAME="vmoperator"     # Username (leave empty to skip)
+HOST_USER_FULLNAME="VM Operator"
+HOST_USER_PASSWORD=""           # Set before running create-user
+HOST_USER_ADMIN="false"         # true for admin, false for standard
 ```
 
 ## Usage
+
+### Host User Management (Optional)
+
+Create a dedicated macOS user for VM access:
+
+```bash
+# Create user interactively
+./setup.sh create-user
+
+# Or use the standalone script
+./scripts/create-user.sh vmoperator "VM Operator"
+
+# List local users
+./setup.sh list-users
+
+# Delete a user (if needed)
+./setup.sh delete-user
+```
+
+After creating a user, log out and log in as that user before continuing setup.
 
 ### Initial Setup
 
