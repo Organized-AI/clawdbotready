@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "=== VM User Verification ==="
+echo "Please open the VM Screen Sharing window and run this command in the VM's Terminal:"
+echo ""
+echo "whoami"
+echo ""
+echo "This will show the actual username that was created."
+echo ""
+echo "Then check System Settings → General → Sharing → Remote Login"
+echo "and verify that Remote Login is enabled for that user."

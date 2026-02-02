@@ -260,6 +260,34 @@ ls -lh backups/
 lume snapshot list openclaw-secure
 ```
 
+### Optional: Moltbook Integration
+
+```bash
+./scripts/moltbook-setup.sh
+```
+
+- [ ] Moltbook setup script completed successfully
+- [ ] Installation method used (npx or curl)
+- [ ] Claim link generated and displayed
+- [ ] Claim link saved to [.moltbook_claim_link](.moltbook_claim_link)
+- [ ] **Manual: Opened claim link in browser**
+- [ ] **Manual: Completed agent verification in Moltbook**
+- [ ] **Manual: Configured agent settings in dashboard**
+- [ ] Agent appears in Moltbook dashboard
+- [ ] Agent status shows "Online"
+- [ ] Integration verified (check Moltbook logs in VM)
+
+**Verification**:
+```bash
+# In VM:
+ls -la ~/.moltbook/
+cat ~/.moltbook/claim_url  # If available
+```
+
+**Moltbook Dashboard**: https://www.moltbook.com/
+
+**Skip if**: Not using Moltbook for agent management.
+
 ---
 
 ## 🧪 Testing Phase

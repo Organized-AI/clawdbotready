@@ -1,0 +1,8 @@
+2026-01-30 18:15:21 [INFO] Log file: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/setup-20260130_181521.log
+2026-01-30 18:15:21 [INFO] Loaded configuration from /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/config/settings.env
+2026-01-30 18:15:21 [INFO] Running on macOS 15.6 (arm64)
+2026-01-30 18:15:21 [INFO] Disk space OK: 65GB available
+2026-01-30 18:15:21 [INFO] Downloading Lume installer...
+2026-01-30 18:15:21 [INFO] Installer SHA256: 6dc9c7fc93bb488bb0520a6c780a8d3c0fb5486a4711aca49b4c53fac7393023
+2026-01-30 18:15:21 [[1;33mWARN[0m] Please review the installer script at: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/lume-install.sh
+2026-01-30 18:15:21 [[0;31mERROR[0m] Lume installation cancelled

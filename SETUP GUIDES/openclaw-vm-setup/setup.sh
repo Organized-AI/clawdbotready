@@ -699,12 +699,65 @@ EOF
 #===============================================================================
 
 phase4_gateway_config() {
-    header "Phase 4: OpenClaw Gateway Configuration"
+    header "Phase 4: OpenClaw Gateway Installation & Configuration"
 
     local vm_ip=$(get_vm_ip)
     local key_path="$HOME/.ssh/openclaw_vm_ed25519"
 
-    info "Configuring Gateway on VM..."
+    info "Installing OpenClaw Gateway on VM..."
+
+    # Install Node.js and OpenClaw Gateway
+    ssh -i "$key_path" "${VM_USER}@${vm_ip}" << 'INSTALL_EOF'
+# Check if Node.js is installed
+if ! command -v node &>/dev/null; then
+    echo "Installing Node.js..."
+
+    # Check if Homebrew is available
+    if command -v brew &>/dev/null; then
+        brew install node
+    else
+        # Install Homebrew first
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        # Add Homebrew to PATH
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+        brew install node
+    fi
+fi
+
+# Verify Node.js installation
+node_version=$(node --version)
+npm_version=$(npm --version)
+echo "Node.js installed: $node_version"
+echo "npm installed: $npm_version"
+
+# Install OpenClaw Gateway globally
+echo "Installing OpenClaw Gateway..."
+npm install -g openclaw@latest
+
+# Verify OpenClaw installation
+if command -v openclaw &>/dev/null; then
+    openclaw_version=$(openclaw --version 2>/dev/null || echo "unknown")
+    echo "OpenClaw Gateway installed: $openclaw_version"
+else
+    echo "ERROR: OpenClaw installation failed"
+    exit 1
+fi
+
+# Create directories
+mkdir -p ~/.openclaw/certs
+mkdir -p ~/.openclaw/logs
+mkdir -p ~/.openclaw/skills
+
+echo "OpenClaw Gateway installation complete"
+INSTALL_EOF
+
+    if [[ $? -ne 0 ]]; then
+        error "OpenClaw Gateway installation failed"
+        exit 1
+    fi
+
+    success "OpenClaw Gateway installed successfully"
 
     # Generate auth token
     local auth_token=$(openssl rand -hex 32)
@@ -713,11 +766,8 @@ phase4_gateway_config() {
     chmod 600 "${SCRIPT_DIR}/.gateway_token"
 
     # Create Gateway config
+    info "Configuring Gateway on VM..."
     ssh -i "$key_path" "${VM_USER}@${vm_ip}" << REMOTE_EOF
-# Create directories
-mkdir -p ~/.openclaw/certs
-mkdir -p ~/.openclaw/logs
-
 # Generate self-signed TLS certificate
 cd ~/.openclaw/certs
 openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt \
@@ -761,20 +811,36 @@ GATEWAY_CONFIG
 echo "Gateway configuration created"
 REMOTE_EOF
 
-    # Copy exec-approvals template (using SSH instead of scp since we disabled SFTP)
+    # Copy exec-approvals template
     if [[ -f "${SCRIPT_DIR}/config/exec-approvals.json" ]]; then
         info "Copying exec-approvals configuration..."
         cat "${SCRIPT_DIR}/config/exec-approvals.json" | \
             ssh -i "$key_path" "${VM_USER}@${vm_ip}" "cat > ~/.openclaw/exec-approvals.json"
     fi
 
-    success "Gateway configuration complete"
+    # Run OpenClaw onboarding (non-interactive for VM)
+    info "Running OpenClaw onboarding..."
+    ssh -i "$key_path" "${VM_USER}@${vm_ip}" << 'ONBOARD_EOF'
+# Run onboarding in non-interactive mode
+openclaw onboard --install-daemon --non-interactive 2>&1 || echo "Onboarding completed with warnings (expected)"
 
+# Verify Gateway can start
+echo "Testing Gateway startup..."
+timeout 5 openclaw gateway --port 8080 --bind 127.0.0.1 &>/dev/null || echo "Gateway test complete"
+ONBOARD_EOF
+
+    success "Gateway installation and configuration complete"
+
+    echo ""
+    echo -e "${GREEN}✓ OpenClaw Gateway is ready!${NC}"
     echo ""
     echo -e "${YELLOW}Gateway Access:${NC}"
     echo "  1. Create SSH tunnel: ssh -i $key_path -L 8080:127.0.0.1:8080 -N ${VM_USER}@${vm_ip}"
     echo "  2. Access Gateway at: https://localhost:8080"
     echo "  3. Auth token saved to: ${SCRIPT_DIR}/.gateway_token"
+    echo ""
+    echo -e "${YELLOW}Start Gateway:${NC}"
+    echo "  ssh -i $key_path ${VM_USER}@${vm_ip} 'openclaw gateway --port 8080'"
 }
 
 #===============================================================================
@@ -962,6 +1028,145 @@ RESTORE_SCRIPT
 }
 
 #===============================================================================
+# Phase 7: Moltbook Integration (Optional)
+#===============================================================================
+
+phase7_moltbook_integration() {
+    header "Phase 7: Moltbook Integration (Optional)"
+
+    local vm_ip=$(get_vm_ip)
+    local key_path="$HOME/.ssh/openclaw_vm_ed25519"
+
+    echo ""
+    echo -e "${BLUE}Moltbook Integration${NC}"
+    echo "Moltbook provides centralized agent management, monitoring, and integrations."
+    echo "Website: https://www.moltbook.com/"
+    echo ""
+
+    if ! confirm "Do you want to connect your OpenClaw agent to Moltbook?"; then
+        info "Skipping Moltbook integration"
+        return 0
+    fi
+
+    info "Installing Moltbook integration on VM..."
+
+    # Install Moltbook using npx molthub
+    ssh -i "$key_path" "${VM_USER}@${vm_ip}" << 'MOLTBOOK_EOF'
+# Create Moltbook directory
+mkdir -p ~/.moltbook
+
+echo "Installing Moltbook integration..."
+
+# Method 1: Try npx molthub (recommended)
+if command -v npx &>/dev/null; then
+    echo "Using npx molthub@latest install moltbook..."
+    npx molthub@latest install moltbook 2>&1 | tee ~/.moltbook/install.log
+    install_status=${PIPESTATUS[0]}
+else
+    echo "npx not available, trying curl method..."
+    install_status=1
+fi
+
+# Method 2: Fallback to curl if npx fails
+if [[ $install_status -ne 0 ]]; then
+    echo "Trying curl method..."
+    curl -s https://moltbook.com/skill.md -o ~/.openclaw/skills/moltbook.md 2>&1 | tee -a ~/.moltbook/install.log
+
+    if [[ -f ~/.openclaw/skills/moltbook.md ]]; then
+        echo "Moltbook skill downloaded successfully"
+        install_status=0
+    else
+        echo "ERROR: Moltbook installation failed"
+        exit 1
+    fi
+fi
+
+# Look for claim URL in installation output or logs
+claim_url=""
+if [[ -f ~/.moltbook/install.log ]]; then
+    claim_url=$(grep -oE 'https://moltbook\.com/claim/[a-zA-Z0-9]+' ~/.moltbook/install.log | head -1)
+fi
+
+# If claim URL found, save it
+if [[ -n "$claim_url" ]]; then
+    echo "$claim_url" > ~/.moltbook/claim_url
+    echo "Claim URL saved to ~/.moltbook/claim_url"
+fi
+
+# Check for other common claim URL locations
+if [[ -z "$claim_url" ]] && [[ -f ~/.moltbook/claim ]]; then
+    claim_url=$(cat ~/.moltbook/claim)
+fi
+
+if [[ -z "$claim_url" ]] && [[ -f ~/.openclaw/moltbook_claim ]]; then
+    claim_url=$(cat ~/.openclaw/moltbook_claim)
+fi
+
+echo "Moltbook installation complete"
+echo "CLAIM_URL=$claim_url"
+MOLTBOOK_EOF
+
+    if [[ $? -ne 0 ]]; then
+        error "Moltbook installation failed - check VM logs"
+        return 1
+    fi
+
+    success "Moltbook integration installed"
+
+    # Try to retrieve the claim URL from VM
+    local claim_url=$(ssh -i "$key_path" "${VM_USER}@${vm_ip}" "cat ~/.moltbook/claim_url 2>/dev/null || echo ''")
+
+    # Also check install log for claim URL
+    if [[ -z "$claim_url" ]]; then
+        claim_url=$(ssh -i "$key_path" "${VM_USER}@${vm_ip}" "grep -oE 'https://moltbook\.com/claim/[a-zA-Z0-9]+' ~/.moltbook/install.log 2>/dev/null | head -1 || echo ''")
+    fi
+
+    echo ""
+    if [[ -n "$claim_url" ]]; then
+        # Save claim URL to host
+        echo "$claim_url" > "${SCRIPT_DIR}/.moltbook_claim_link"
+        chmod 600 "${SCRIPT_DIR}/.moltbook_claim_link"
+
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${GREEN}  🔗 Moltbook Claim Link${NC}"
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo ""
+        echo -e "  ${YELLOW}${claim_url}${NC}"
+        echo ""
+        echo -e "${YELLOW}ACTION REQUIRED:${NC}"
+        echo "  1. Open the claim link above in your browser"
+        echo "  2. Sign in to Moltbook (or create an account)"
+        echo "  3. Verify agent ownership and approve the claim"
+        echo "  4. Configure agent settings in the Moltbook dashboard"
+        echo ""
+        echo "  Claim link saved to: ${SCRIPT_DIR}/.moltbook_claim_link"
+        echo ""
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    else
+        warn "No claim link generated automatically"
+        echo ""
+        echo "Manual steps to claim your agent:"
+        echo "  1. Visit https://www.moltbook.com/"
+        echo "  2. Sign in or create an account"
+        echo "  3. Navigate to 'Add Agent' or 'Claim Agent'"
+        echo "  4. Follow the instructions to manually claim your agent"
+        echo ""
+        echo "Check VM for claim information:"
+        echo "  ssh -i $key_path ${VM_USER}@${vm_ip}"
+        echo "  cat ~/.moltbook/install.log"
+    fi
+
+    echo ""
+    success "Moltbook integration complete"
+    echo ""
+    echo "Next steps:"
+    echo "  • Complete agent verification at Moltbook dashboard"
+    echo "  • Configure agent name, description, and tags"
+    echo "  • Set up integrations (Slack, Discord, webhooks, etc.)"
+    echo "  • Documentation: ${SCRIPT_DIR}/../DOCUMENTATION/moltbook-integration-guide.md"
+}
+
+#===============================================================================
 # Main Entry Point
 #===============================================================================
 
@@ -1039,6 +1244,7 @@ main() {
             phase4_gateway_config
             phase5_monitoring
             phase6_backups
+            phase7_moltbook_integration
 
             header "Setup Complete!"
             echo -e "${GREEN}OpenClaw VM is now configured with security hardening.${NC}"
@@ -1064,6 +1270,9 @@ main() {
         6|phase6)
             phase6_backups
             ;;
+        7|phase7)
+            phase7_moltbook_integration
+            ;;
         all)
             phase0_verify_environment || exit 1
             phase1_install_lume
@@ -1072,6 +1281,7 @@ main() {
             phase4_gateway_config
             phase5_monitoring
             phase6_backups
+            phase7_moltbook_integration
 
             header "Setup Complete!"
 
@@ -1107,6 +1317,7 @@ main() {
             echo "  4 or phase4  Install and configure OpenClaw Gateway"
             echo "  5 or phase5  Setup monitoring and alerting"
             echo "  6 or phase6  Configure backups"
+            echo "  7 or phase7  Connect agent to Moltbook (optional)"
             echo "  all          Run all phases sequentially (default)"
             echo ""
             echo "Example:"

@@ -1,0 +1,8 @@
+2026-01-30 19:53:48 [INFO] Log file: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/setup-20260130_195348.log
+2026-01-30 19:53:48 [INFO] Loaded configuration from /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/config/settings.env
+2026-01-30 19:53:48 [INFO] Running on macOS 15.6 (arm64)
+2026-01-30 19:53:48 [INFO] Disk space OK: 58GB available
+2026-01-30 19:53:48 [INFO] Lume is already installed: 0.2.52
+2026-01-30 19:53:48 [INFO] Skipping Lume installation
+2026-01-30 19:53:48 [INFO] Creating VM: openclaw-secure
+2026-01-30 19:53:48 [INFO] Creating VM with: CPU=4, Memory=8192MB, Disk=50G

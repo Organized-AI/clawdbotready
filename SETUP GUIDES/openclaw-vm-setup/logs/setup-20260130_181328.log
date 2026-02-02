@@ -1,0 +1,21 @@
+2026-01-30 18:13:28 [INFO] Log file: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/setup-20260130_181328.log
+2026-01-30 18:13:28 [INFO] Loaded configuration from /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/config/settings.env
+2026-01-30 18:13:28 [INFO] Running on macOS 15.6 (arm64)
+2026-01-30 18:13:28 [INFO] Disk space OK: 65GB available
+2026-01-30 18:13:28 [INFO] Checking machine identity...
+2026-01-30 18:13:28 [INFO] Hostname: Jordans-Mac-mini.local
+2026-01-30 18:13:28 [INFO] User: jordaaan
+2026-01-30 18:13:28 [INFO] Home: /Users/jordaaan
+2026-01-30 18:13:28 [[0;32mSUCCESS[0m] Apple Silicon detected (arm64)
+2026-01-30 18:13:28 [INFO] Hardware:       Chip: Apple M4
+2026-01-30 18:13:28 [INFO]       Memory: 16 GB
+2026-01-30 18:13:28 [INFO] macOS Version: 15.6
+2026-01-30 18:13:28 [[0;32mSUCCESS[0m] macOS version OK (Sequoia or later)
+2026-01-30 18:13:28 [INFO] Available disk space: 65GB
+2026-01-30 18:13:28 [[0;31mERROR[0m] Need at least 70GB free (VM requires ~60GB). Available: 65GB
+2026-01-30 18:13:28 [INFO] Lume is NOT installed (Phase 1 will install it)
+2026-01-30 18:13:28 [INFO] Checking network connectivity...
+2026-01-30 18:13:28 [[0;32mSUCCESS[0m] Internet: Connected
+2026-01-30 18:13:29 [[1;33mWARN[0m] Lume site: May be blocked or down
+2026-01-30 18:13:29 [[0;32mSUCCESS[0m] Apple CDN: Accessible
+2026-01-30 18:13:29 [[0;31mERROR[0m] Some critical checks failed. Please resolve issues before continuing.

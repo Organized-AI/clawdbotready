@@ -1,0 +1,7 @@
+2026-01-30 20:29:23 [INFO] Log file: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/setup-20260130_202923.log
+2026-01-30 20:29:23 [INFO] Loaded configuration from /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/config/settings.env
+2026-01-30 20:29:23 [INFO] Running on macOS 15.6 (arm64)
+2026-01-30 20:29:23 [INFO] Skipping disk space check (not needed for Phase 4)
+2026-01-30 20:29:23 [INFO] Configuring Gateway on VM...
+2026-01-30 20:29:23 [INFO] Generated Gateway auth token (save this!): 1719f7dd77a18fb0e0b6fe43bd49094b5a405e5cf57ad67b55b317b09e75510c
+2026-01-30 20:29:24 [INFO] Copying exec-approvals configuration...

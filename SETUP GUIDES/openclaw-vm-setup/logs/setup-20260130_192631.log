@@ -1,0 +1,7 @@
+2026-01-30 19:26:31 [INFO] Log file: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/setup-20260130_192631.log
+2026-01-30 19:26:31 [INFO] Loaded configuration from /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/config/settings.env
+2026-01-30 19:26:31 [INFO] Running on macOS 15.6 (arm64)
+2026-01-30 19:26:31 [INFO] Skipping disk space check (not needed for Phase 2)
+2026-01-30 19:26:31 [INFO] VM IP: 192.168.64.3
+2026-01-30 19:26:31 [INFO] SSH key already exists: /Users/jordaaan/.ssh/openclaw_vm_ed25519
+2026-01-30 19:26:31 [INFO] Copying SSH public key to VM...

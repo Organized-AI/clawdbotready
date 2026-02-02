@@ -27,16 +27,17 @@ chmod +x setup.sh scripts/*.sh
 
 ## What It Does
 
-The setup process runs through 6 phases:
+The setup process runs through 7 phases:
 
 | Phase | Description |
 |-------|-------------|
 | 1 | Install Lume hypervisor and create macOS VM |
 | 2 | Harden SSH (key-only auth, strong algorithms) |
 | 3 | Configure host firewall (pf rules) |
-| 4 | Install and secure OpenClaw Gateway |
+| 4 | Install and configure OpenClaw Gateway |
 | 5 | Set up monitoring and alerting |
 | 6 | Configure automated backups |
+| 7 | Connect agent to Moltbook (optional) |
 
 ## Directory Structure
 
@@ -53,7 +54,8 @@ openclaw-vm-setup/
 │   ├── backup-vm.sh            # Backup VM and configs
 │   ├── restore-vm.sh           # Restore from snapshot
 │   ├── emergency-stop.sh       # EMERGENCY: Kill VM immediately
-│   └── restart-vm.sh           # Restart after emergency stop
+│   ├── restart-vm.sh           # Restart after emergency stop
+│   └── moltbook-setup.sh       # Connect agent to Moltbook
 ├── logs/                       # Setup and monitoring logs
 ├── backups/                    # Config backups stored here
 └── README.md                   # This file
@@ -83,9 +85,10 @@ VM_USER="openclaw"              # VM user account
 ./setup.sh 1    # Install Lume + create VM
 ./setup.sh 2    # SSH hardening
 ./setup.sh 3    # Host firewall
-./setup.sh 4    # Gateway config
+./setup.sh 4    # Gateway installation & config
 ./setup.sh 5    # Monitoring
 ./setup.sh 6    # Backups
+./setup.sh 7    # Moltbook integration (optional)
 ```
 
 ### Daily Operations
@@ -103,6 +106,9 @@ VM_USER="openclaw"              # VM user account
 
 # Backup VM
 ./scripts/backup-vm.sh
+
+# Connect to Moltbook (optional)
+./scripts/moltbook-setup.sh
 ```
 
 ### Emergency Procedures

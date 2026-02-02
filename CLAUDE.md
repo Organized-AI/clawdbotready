@@ -39,6 +39,11 @@ A comprehensive deployment toolkit and documentation hub that makes Clawdbot (AI
 │   ├── ssh-tunnels-explained.md
 │   ├── tailscale-explained.md
 │   └── team-deployment-guide.md
+├── CLI/                           → Custom command-line tools (iCloud synced)
+│   ├── README.md                  → Tool documentation
+│   └── session-tools.sh           → Cross-machine session management
+├── .claude-sessions/              → Session archive for cross-machine sync
+│   └── README.md                  → Setup instructions for auto-export
 ├── openclaw-vm-setup/             → **PRIMARY FOCUS**: VM automation toolkit
 │   ├── README.md                  → User-facing quick start
 │   ├── setup.sh                   → Master orchestration script
@@ -253,6 +258,11 @@ cd openclaw-vm-setup && ./scripts/status.sh
 
 # Run specific phase
 ./setup.sh 1  # Just Phase 1
+
+# Session management (CLI tools)
+./CLI/session-tools.sh list          # List recent sessions
+./CLI/session-tools.sh search "term" # Search session content
+./CLI/session-tools.sh sync          # Sync sessions to iCloud
 ```
 
 ### File Locations
