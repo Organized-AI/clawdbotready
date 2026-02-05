@@ -1,4 +1,0 @@
-2026-01-30 17:55:36 [INFO] Log file: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/setup-20260130_175536.log
-2026-01-30 17:55:36 [INFO] Loaded configuration from /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/config/settings.env
-2026-01-30 17:55:36 [INFO] Running on macOS 15.6 (arm64)
-2026-01-30 17:55:36 [[0;31mERROR[0m] Insufficient disk space. Required: 70GB, Available: 45GB

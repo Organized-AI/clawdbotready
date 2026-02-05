@@ -230,10 +230,138 @@ Tailscale CANNOT see your data - only encrypted packets pass through.
 
 ---
 
+## macOS Installation Variants
+
+Tailscale offers three distinct installation methods for macOS 12.0+, each with different characteristics and use cases.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│               TAILSCALE macOS INSTALLATION OPTIONS                  │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1️⃣  STANDALONE (Recommended for most users)                        │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │  Download:  https://tailscale.com/download/mac                │ │
+│  │  Type:      System Extension                                  │ │
+│  │  Requires:  No Apple ID                                       │ │
+│  │  Updates:   Direct from Tailscale (faster security patches)   │ │
+│  │  Features:  Full feature set (Funnel, SSH server, Taildrop)   │ │
+│  │  Pros:      Best compatibility, fastest updates, most stable  │ │
+│  │  Cons:      Manual installation (.pkg file)                   │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  2️⃣  MAC APP STORE (Easiest for beginners)                          │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │  Download:  Mac App Store (search "Tailscale")                │ │
+│  │  Type:      Network Extension (sandboxed)                     │ │
+│  │  Requires:  Apple ID                                          │ │
+│  │  Updates:   Through App Store (slower, subject to review)     │ │
+│  │  Features:  Limited - NO Funnel, NO SSH server                │ │
+│  │  Pros:      One-click install, familiar update process        │ │
+│  │  Cons:      Feature limitations, Screen Time conflicts        │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  3️⃣  CLI ONLY (Advanced users & automation)                         │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │  Download:  brew install tailscale (or compile from source)   │ │
+│  │  Type:      Kernel utun interface                             │ │
+│  │  Requires:  Command-line familiarity                          │ │
+│  │  Updates:   Manual (Homebrew or build from source)            │ │
+│  │  Features:  No GUI, incomplete Taildrop support               │ │
+│  │  Pros:      Maximum control, scriptable, open source          │ │
+│  │  Cons:      No graphical interface, manual configuration      │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Feature Comparison Matrix
+
+```
+┌──────────────────────┬─────────────┬─────────────┬─────────────┐
+│  FEATURE             │  STANDALONE │  APP STORE  │  CLI ONLY   │
+├──────────────────────┼─────────────┼─────────────┼─────────────┤
+│  System Extension    │      ✅     │      ❌     │      ❌     │
+│  Network Extension   │      ❌     │      ✅     │      ❌     │
+│  GUI Management      │      ✅     │      ✅     │      ❌     │
+│  MagicDNS            │      ✅     │      ✅     │      ✅     │
+│  Auto-updates        │      ✅     │      ✅     │      ❌     │
+│  Tailscale Funnel    │      ✅     │      ❌     │      ✅     │
+│  SSH Server          │      ✅     │      ❌     │      ✅     │
+│  Taildrop (file)     │      ✅     │      ✅     │     ⚠️*     │
+│  Apple ID required   │      ❌     │      ✅     │      ❌     │
+│  Conflict detection  │      ✅     │      ❌     │      ❌     │
+└──────────────────────┴─────────────┴─────────────┴─────────────┘
+* CLI variant has incomplete Taildrop support
+```
+
+### ⚠️ Important Installation Notes
+
+**DO NOT install multiple variants simultaneously!**
+
+```
+❌ WRONG:
+   Standalone + App Store on same Mac = Extension won't launch
+
+✅ CORRECT:
+   1. Uninstall existing variant completely
+   2. Empty Trash
+   3. Reboot Mac
+   4. Install new variant
+```
+
+### Which Variant Should You Choose?
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    DECISION GUIDE                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Choose STANDALONE if:                                              │
+│    • You want the most stable, feature-complete experience          │
+│    • You need Tailscale Funnel (expose services to internet)        │
+│    • You want to run Tailscale SSH server                           │
+│    • You need fastest security updates                              │
+│    • You're deploying for production use (Clawdbot!)                │
+│                                                                     │
+│  Choose APP STORE if:                                               │
+│    • You're just trying Tailscale for the first time                │
+│    • You want one-click installation                                │
+│    • You only need basic VPN connectivity                           │
+│    • You don't need advanced features                               │
+│                                                                     │
+│  Choose CLI ONLY if:                                                │
+│    • You're automating deployments (scripting)                      │
+│    • You prefer command-line tools                                  │
+│    • You don't need GUI management                                  │
+│    • You're building custom integrations                            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### For Clawdbot Deployments: Use Standalone
+
+```
+🎯 RECOMMENDATION:
+   For OpenClaw Gateway / Clawdbot deployments, use the STANDALONE variant:
+
+   • Full feature compatibility
+   • Best stability for production services
+   • Faster security patches (no App Store review delays)
+   • Can detect conflicts with other VPN/network tools
+   • Supports Funnel if you want to expose Gateway to internet later
+```
+
+---
+
 ## Setup Commands
 
 ```bash
-# Install (macOS)
+# Install - STANDALONE (Recommended for Clawdbot)
+# Download from: https://tailscale.com/download/mac
+# Run the .pkg installer
+
+# Install - CLI ONLY (via Homebrew)
 brew install tailscale
 
 # Start the service

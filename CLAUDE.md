@@ -29,42 +29,44 @@ A comprehensive deployment toolkit and documentation hub that makes Clawdbot (AI
 ## Project Structure
 ```
 /
+├── .archive/                      → Archived/deprecated files (gitignored)
+├── .claude/                       → Claude Code configuration
+│   ├── settings.json              → Permissions and project config
+│   ├── commands/                  → Custom slash commands
+│   │   ├── boris/                 → Boris methodology commands
+│   │   ├── oc/                    → Organized Codebase commands
+│   │   └── session/               → Session management commands
+│   └── skills/                    → Installed Claude skills
+├── .claude-sessions/              → Session archive for cross-machine sync
+├── CLI/                           → Custom command-line tools (iCloud synced)
+│   ├── README.md                  → Tool documentation
+│   └── session-tools.sh           → Cross-machine session management
+├── DOCUMENTATION/                 → All deployment guides and docs
+│   ├── clawdbot-*.md              → Clawdbot-specific guides
+│   ├── openclaw-*.md              → OpenClaw setup guides
+│   ├── ssh-*.md                   → SSH tunnel documentation
+│   ├── tailscale-*.md             → Tailscale networking guides
+│   ├── telegram-*.md              → Telegram bot setup
+│   └── team-deployment-guide.md   → Team deployment workflows
 ├── PLANNING/                      → Project planning artifacts
 │   ├── PROJECT.md                 → Vision, goals, success metrics
 │   ├── REQUIREMENTS.md            → v1/v2 feature breakdown
 │   ├── ROADMAP.md                 → Milestone-based implementation plan
 │   └── STATE.md                   → Current decisions and blockers
-├── DOCUMENTATION/                 → Comprehensive deployment guides
-│   ├── clawdbot-deployment-explained.md
-│   ├── ssh-tunnels-explained.md
-│   ├── tailscale-explained.md
-│   └── team-deployment-guide.md
-├── CLI/                           → Custom command-line tools (iCloud synced)
-│   ├── README.md                  → Tool documentation
-│   └── session-tools.sh           → Cross-machine session management
-├── .claude-sessions/              → Session archive for cross-machine sync
-│   └── README.md                  → Setup instructions for auto-export
-├── openclaw-vm-setup/             → **PRIMARY FOCUS**: VM automation toolkit
-│   ├── README.md                  → User-facing quick start
-│   ├── setup.sh                   → Master orchestration script
+├── openclaw-vm-setup/             → VM-isolated deployment toolkit
 │   ├── config/                    → Configuration templates
-│   │   ├── settings.env           → VM and system settings
-│   │   └── exec-approvals.json    → Security command allowlist
-│   ├── scripts/                   → Helper utilities
-│   │   ├── connect.sh             → SSH into VM
-│   │   ├── tunnel.sh              → Create Gateway tunnel
-│   │   ├── status.sh              → VM health check
-│   │   ├── backup-vm.sh           → Backup configs and snapshots
-│   │   ├── restore-vm.sh          → Restore from backup
-│   │   ├── emergency-stop.sh      → Kill switch for compromised VMs
-│   │   └── restart-vm.sh          → Recovery restart
-│   └── PLANNING/                  → Implementation phase plans
-│       ├── IMPLEMENTATION-MASTER-PLAN.md
-│       └── implementation-phases/ → Phase 0-8 detailed prompts
-├── .claude/                       → Claude Code configuration
-│   ├── settings.json              → Permissions and project config
-│   └── commands/                  → Custom slash commands (if any)
-└── CLAUDE.md                      → This file (AI context)
+│   ├── scripts/                   → VM helper utilities
+│   └── PLANNING/                  → Phase 0-8 implementation plans
+├── openclaw-native-setup/         → Native macOS deployment toolkit
+├── scripts/                       → Standalone automation scripts
+│   ├── auto-deploy-openclaw.sh    → Automated deployment
+│   ├── deploy-openclaw-telegram.sh
+│   ├── install-openclaw.sh        → Installation script
+│   ├── openclaw-health-monitor.sh → Health monitoring
+│   └── setup-openclaw-autostart.sh
+├── CLAUDE.md                      → This file (AI context)
+├── README.md                      → User-facing project overview
+└── justfile                       → Project command runner
 ```
 
 ## Current Focus
@@ -290,3 +292,4 @@ When working on this project:
 
 ---
 *Initialized with Organized Codebase v0.1.0 on 2026-01-30*
+*Reorganized with Organized Codebase Applicator v2 on 2026-02-04*

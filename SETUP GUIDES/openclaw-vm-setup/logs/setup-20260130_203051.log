@@ -1,6 +1,0 @@
-2026-01-30 20:30:51 [INFO] Log file: /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/logs/setup-20260130_203051.log
-2026-01-30 20:30:51 [INFO] Loaded configuration from /Users/jordaaan/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Clawdbot Ready/openclaw-vm-setup/config/settings.env
-2026-01-30 20:30:51 [INFO] Running on macOS 15.6 (arm64)
-2026-01-30 20:30:51 [INFO] Skipping disk space check (not needed for Phase 6)
-2026-01-30 20:30:51 [INFO] Creating backup scripts...
-2026-01-30 20:30:51 [[0;32mSUCCESS[0m] Backup scripts created

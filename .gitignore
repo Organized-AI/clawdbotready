@@ -11,3 +11,19 @@
 # Environment
 .env
 .env.local
+
+# Archived/deprecated files
+.archive/
+
+# Regenerable
+node_modules/
+dist/
+build/
+
+# Secrets
+.vm_ip
+.gateway_token
+
+# Logs
+logs/
+*.log
