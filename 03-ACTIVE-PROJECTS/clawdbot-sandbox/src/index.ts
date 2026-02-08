@@ -10,6 +10,22 @@ import { Bash } from "just-bash";
 
 export type { BashExecResult, BashOptions, NetworkConfig } from "just-bash";
 export { Bash, InMemoryFs, OverlayFs, ReadWriteFs } from "just-bash";
+export type { AuditEntry, PluginManifest, PluginState } from "./plugin/index.js";
+export {
+	createPlugin,
+	createPluginState,
+	disablePlugin,
+	enablePlugin,
+	executeSkill,
+	getDefaultConfig,
+	loadPluginConfig,
+	onConfigChange,
+	onPluginDisable,
+	onPluginEnable,
+	onSkillExecute,
+	PLUGIN_MANIFEST,
+	PluginConfig,
+} from "./plugin/index.js";
 export type {
 	BashToolConfig,
 	BashToolResult,
