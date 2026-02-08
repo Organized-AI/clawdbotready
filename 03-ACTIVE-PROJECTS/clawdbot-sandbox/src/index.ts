@@ -10,6 +10,21 @@ import { Bash } from "just-bash";
 
 export type { BashExecResult, BashOptions, NetworkConfig } from "just-bash";
 export { Bash, InMemoryFs, OverlayFs, ReadWriteFs } from "just-bash";
+export type {
+	BashToolConfig,
+	BashToolResult,
+	CustomerContext,
+} from "./sandbox/ai-tool/index.js";
+export {
+	BashToolConfigSchema,
+	CustomerContextSchema,
+	createBashForConfig,
+	createCustomerBashTool,
+	createTieredBashTool,
+	DEFAULT_EXECUTION_LIMITS,
+	seedContextFiles,
+	seedCustomerFiles,
+} from "./sandbox/ai-tool/index.js";
 export { createSandbox } from "./sandbox/fs-tiers/index.js";
 export type { HttpMethod, NetworkManagerConfig, NetworkPreset } from "./sandbox/network/index.js";
 export {
