@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task type="auto">
+  <name>Phase 3: Configuration & Installation</name>
+  <description>Build CLI, install globally, migrate credentials</description>
+
+  <remote>
+    <host>openclaw@100.66.145.48</host>
+    <working_dir>~/google-ads-cli</working_dir>
+  </remote>
+
+  <dependencies>
+    <requires>phase-2-PLAN.xml</requires>
+  </dependencies>
+
+  <files>
+    <file action="create">~/.google-ads-cli/config.json</file>
+    <file action="create">~/google-ads-cli/dist/</file>
+    <file action="create">/usr/local/bin/google-ads-cli</file>
+  </files>
+
+  <action>
+    1. Create config directory:
+       mkdir -p ~/.google-ads-cli
+
+    2. Migrate credentials:
+       cp ~/.openclaw-backup/skills/google-ads-pro/config/credentials.json ~/.google-ads-cli/config.json
+
+    3. Build TypeScript:
+       npm run build
+       # Creates dist/ directory with compiled JS
+
+    4. Install globally:
+       npm link
+       # Creates symlink: /usr/local/bin/google-ads-cli -> ~/google-ads-cli/dist/index.js
+
+    5. Verify installation:
+       which google-ads-cli
+       google-ads-cli --version
+       google-ads-cli --help
+  </action>
+
+  <verify>
+    - ~/.google-ads-cli/config.json exists with credentials
+    - dist/ directory populated with compiled JavaScript
+    - which google-ads-cli returns path
+    - google-ads-cli --version responds
+    - google-ads-cli --help shows all 5 commands
+    - Symlink in /usr/local/bin/ points correctly
+  </verify>
+
+  <done>
+    - CLI built and installed globally
+    - Credentials migrated
+    - CLI accessible from any directory
+    - Ready for OpenClaw integration
+  </done>
+</task>

@@ -1,4 +1,5 @@
 {
+  "model": "claude-opus-4-6",
   "hooks": {
     "SessionStart": [
       {
@@ -44,7 +45,8 @@
       "Bash(tail:*)",
       "Bash(grep:*)",
       "Bash(which:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(gcloud:*)"
     ],
     "ask": [
       "Bash(git add:*)",

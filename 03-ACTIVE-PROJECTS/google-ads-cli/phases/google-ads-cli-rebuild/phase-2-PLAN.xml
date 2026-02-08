@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task type="auto">
+  <name>Phase 2: Core Implementation</name>
+  <description>Build CLI entry point and all 5 Google Ads API commands</description>
+
+  <remote>
+    <host>openclaw@100.66.145.48</host>
+    <working_dir>~/google-ads-cli</working_dir>
+  </remote>
+
+  <dependencies>
+    <requires>phase-1-PLAN.xml</requires>
+  </dependencies>
+
+  <files>
+    <file action="create">src/index.ts</file>
+    <file action="create">src/lib/client.ts</file>
+    <file action="create">src/commands/list-campaigns.ts</file>
+    <file action="create">src/commands/get-cpa-metrics.ts</file>
+    <file action="create">src/commands/update-budget.ts</file>
+    <file action="create">src/commands/generate-report.ts</file>
+    <file action="create">src/commands/manage-campaign.ts</file>
+    <file action="modify">package.json</file>
+  </files>
+
+  <action>
+    1. Implement src/lib/client.ts:
+       - Google Ads API client wrapper
+       - Load credentials from ~/.google-ads-cli/config.json
+       - Handle authentication (developer_token, client_id, client_secret, refresh_token)
+       - Support multiple customer accounts
+
+    2. Implement src/index.ts:
+       - CLI entry point using commander
+       - Register all 5 commands
+       - Version, help, global options
+       - Shebang: #!/usr/bin/env node
+
+    3. Implement src/commands/list-campaigns.ts:
+       - List campaigns with optional filter
+       - Support --customer-id flag for multi-account
+
+    4. Implement src/commands/get-cpa-metrics.ts:
+       - Fetch CPA metrics (CRITICAL - replaces Python script)
+       - Support date ranges (TODAY, YESTERDAY, LAST_7_DAYS, etc)
+       - Support campaign filter
+
+    5. Implement src/commands/update-budget.ts:
+       - Update campaign budget
+       - Requires --campaign-id and --amount
+
+    6. Implement src/commands/generate-report.ts:
+       - Generate formatted performance report
+       - Support date range and metrics selection
+
+    7. Implement src/commands/manage-campaign.ts:
+       - Create/pause/enable campaigns
+       - Subcommands: create, pause, enable
+
+    8. Update package.json:
+       - Add "bin": {"google-ads-cli": "./dist/index.js"}
+       - Add build script: "tsc"
+       - Add dev script: "tsx src/index.ts"
+  </action>
+
+  <verify>
+    - All 7 TypeScript files exist
+    - TypeScript compiles without errors (tsc --noEmit)
+    - CLI has proper commander structure
+    - Google Ads API client handles auth
+    - All 5 commands registered
+    - No console.log debug statements
+  </verify>
+
+  <done>
+    - Core implementation complete
+    - All commands functional
+    - TypeScript clean compile
+    - Ready for build and installation
+  </done>
+</task>

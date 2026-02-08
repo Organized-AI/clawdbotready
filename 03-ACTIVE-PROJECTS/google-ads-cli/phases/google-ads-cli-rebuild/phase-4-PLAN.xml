@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task type="auto">
+  <name>Phase 4: OpenClaw Integration</name>
+  <description>Create thin skill wrapper and verify file descriptor stability</description>
+
+  <remote>
+    <host>openclaw@100.66.145.48</host>
+    <working_dir>~/.openclaw/skills/google-ads-pro</working_dir>
+  </remote>
+
+  <dependencies>
+    <requires>phase-3-PLAN.xml</requires>
+  </dependencies>
+
+  <files>
+    <file action="create">~/.openclaw/skills/google-ads-pro/skill.md</file>
+  </files>
+
+  <action>
+    1. Create skill directory:
+       mkdir -p ~/.openclaw/skills/google-ads-pro
+
+    2. Create skill.md wrapper:
+       # Markdown file that documents CLI usage
+       # NO Python code, NO venv/, just documentation
+       # Contains:
+       - Skill purpose
+       - Available commands with examples
+       - Usage patterns for Claude
+       - References to google-ads-cli binary
+
+    3. Verify file count:
+       find ~/.openclaw/skills/google-ads-pro -type f | wc -l
+       # MUST be exactly 1 (just skill.md)
+
+    4. Check file descriptors BEFORE skill use:
+       lsof -p $(pgrep openclaw-gateway) | wc -l
+       # Should be ~56
+
+    5. Restart gateway to detect new skill:
+       launchctl stop ai.openclaw.gateway
+       sleep 2
+       launchctl start ai.openclaw.gateway
+       sleep 5
+
+    6. Check file descriptors AFTER restart:
+       lsof -p $(pgrep openclaw-gateway) | wc -l
+       # Should STILL be ~56 (no increase)
+  </action>
+
+  <verify>
+    - Only 1 file exists in ~/.openclaw/skills/google-ads-pro/
+    - skill.md is markdown only (no code)
+    - No venv/, no __pycache__, no .py files
+    - File descriptors remain at ~56
+    - Gateway successfully restarted
+    - Gateway logs show skill detected
+  </verify>
+
+  <done>
+    - Skill wrapper created
+    - File count: 15,923 → 1 (99.99% reduction)
+    - File descriptors stable
+    - Gateway healthy
+    - Ready for testing
+  </done>
+</task>

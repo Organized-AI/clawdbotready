@@ -1,0 +1,283 @@
+{
+  "version": "1.0",
+  "description": "OpenClaw VM exec-approvals - Secure defaults",
+  "default_action": "deny",
+  "log_all_attempts": true,
+  "log_file": "~/.openclaw/logs/exec-approvals.log",
+
+  "rules": [
+    {
+      "id": "allow-echo",
+      "description": "Basic output",
+      "binary": "/bin/echo",
+      "action": "allow",
+      "argument_rules": {
+        "max_args": 10,
+        "max_total_length": 1000,
+        "forbidden_patterns": [">>", ">", "|", ";", "`", "$(", "&&"]
+      }
+    },
+    {
+      "id": "allow-date",
+      "description": "Date/time queries",
+      "binary": "/bin/date",
+      "action": "allow",
+      "argument_rules": {
+        "max_args": 3
+      }
+    },
+    {
+      "id": "allow-ls-home",
+      "description": "List user directories",
+      "binary": "/bin/ls",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/Users/openclaw"],
+        "forbidden_patterns": ["..", "/.ssh", "/.gnupg", "/Library/Keychains"]
+      }
+    },
+    {
+      "id": "allow-cat-workspace",
+      "description": "Read workspace files",
+      "binary": "/bin/cat",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/Users/openclaw/.openclaw/workspace"],
+        "forbidden_patterns": [
+          "..",
+          ".env",
+          "password",
+          "secret",
+          "credential",
+          "token",
+          ".pem",
+          ".key",
+          ".p12"
+        ],
+        "max_file_size_kb": 1024
+      }
+    },
+    {
+      "id": "allow-mkdir-workspace",
+      "description": "Create workspace directories",
+      "binary": "/bin/mkdir",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/Users/openclaw/.openclaw/workspace"],
+        "forbidden_patterns": [".."]
+      }
+    },
+    {
+      "id": "allow-cp-workspace",
+      "description": "Copy within workspace",
+      "binary": "/bin/cp",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/Users/openclaw/.openclaw/workspace"],
+        "forbidden_patterns": ["..", "-r /", "-R /"]
+      }
+    },
+    {
+      "id": "allow-mv-workspace",
+      "description": "Move within workspace",
+      "binary": "/bin/mv",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/Users/openclaw/.openclaw/workspace"],
+        "forbidden_patterns": [".."]
+      }
+    },
+    {
+      "id": "allow-rm-workspace-safe",
+      "description": "Remove workspace files (no recursive)",
+      "binary": "/bin/rm",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/Users/openclaw/.openclaw/workspace"],
+        "forbidden_args": ["-r", "-R", "-rf", "-fr", "--recursive"],
+        "forbidden_patterns": ["..", "*", "/"]
+      }
+    },
+    {
+      "id": "allow-pwd",
+      "description": "Print working directory",
+      "binary": "/bin/pwd",
+      "action": "allow"
+    },
+    {
+      "id": "allow-whoami",
+      "description": "Current user",
+      "binary": "/usr/bin/whoami",
+      "action": "allow"
+    },
+    {
+      "id": "allow-which",
+      "description": "Find command paths",
+      "binary": "/usr/bin/which",
+      "action": "allow"
+    },
+
+    {
+      "id": "deny-curl",
+      "description": "DENY curl - exfiltration risk",
+      "binary": "/usr/bin/curl",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-wget",
+      "description": "DENY wget - exfiltration risk",
+      "binary": "/usr/bin/wget",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-nc",
+      "description": "DENY netcat - backdoor risk",
+      "binary": "/usr/bin/nc",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-ssh",
+      "description": "DENY ssh - lateral movement",
+      "binary": "/usr/bin/ssh",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-scp",
+      "description": "DENY scp - exfiltration risk",
+      "binary": "/usr/bin/scp",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-sftp",
+      "description": "DENY sftp - exfiltration risk",
+      "binary": "/usr/bin/sftp",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-rsync",
+      "description": "DENY rsync - exfiltration risk",
+      "binary": "/usr/bin/rsync",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-osascript",
+      "description": "DENY osascript - system control",
+      "binary": "/usr/bin/osascript",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-security",
+      "description": "DENY security - keychain access",
+      "binary": "/usr/bin/security",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-defaults",
+      "description": "DENY defaults - system modification",
+      "binary": "/usr/bin/defaults",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-launchctl",
+      "description": "DENY launchctl - service control",
+      "binary": "/bin/launchctl",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-dscl",
+      "description": "DENY dscl - user management",
+      "binary": "/usr/bin/dscl",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-chmod",
+      "description": "DENY chmod - permission changes",
+      "binary": "/bin/chmod",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-chown",
+      "description": "DENY chown - ownership changes",
+      "binary": "/usr/sbin/chown",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-kill",
+      "description": "DENY kill - process termination",
+      "binary": "/bin/kill",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-pkill",
+      "description": "DENY pkill - process termination",
+      "binary": "/usr/bin/pkill",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-killall",
+      "description": "DENY killall - process termination",
+      "binary": "/usr/bin/killall",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-sudo",
+      "description": "DENY sudo - privilege escalation",
+      "binary": "/usr/bin/sudo",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-su",
+      "description": "DENY su - user switching",
+      "binary": "/usr/bin/su",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-crontab",
+      "description": "DENY crontab - persistence",
+      "binary": "/usr/bin/crontab",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-at",
+      "description": "DENY at - scheduled execution",
+      "binary": "/usr/bin/at",
+      "action": "deny",
+      "alert": true
+    }
+  ],
+
+  "environment_blocklist": [
+    "PATH",
+    "LD_LIBRARY_PATH",
+    "DYLD_*",
+    "NODE_OPTIONS",
+    "PYTHONPATH",
+    "RUBYOPT",
+    "PERL5OPT",
+    "BASH_ENV",
+    "ENV",
+    "CDPATH",
+    "GLOBIGNORE",
+    "SHELLOPTS"
+  ]
+}

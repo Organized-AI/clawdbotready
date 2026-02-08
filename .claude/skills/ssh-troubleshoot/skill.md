@@ -344,7 +344,57 @@ croc YOUR-CODE-HERE
    # Add host configuration
    ```
 
-### Workflow 2: "Permission Denied" Debug
+### Workflow 2: Tailscale-First Remote Access (Preferred)
+
+**Philosophy:** Use Tailscale for secure, direct machine access. Only use SSH when terminal access is required.
+
+1. **Verify Tailscale connectivity:**
+   ```bash
+   # Check if remote machine is online
+   tailscale status | grep machine-name
+   # or ping the Tailscale IP
+   ping 100.66.145.48
+   ```
+
+2. **Access services directly via Tailscale IP:**
+   ```bash
+   # Access OpenClaw Gateway dashboard
+   open "http://100.66.145.48:18789"
+
+   # Access other web services
+   curl http://100.66.145.48:PORT
+   ```
+
+3. **Use SSH only when terminal access is needed:**
+   ```bash
+   # Connect via Tailscale IP
+   ssh user@100.66.145.48
+
+   # Run remote commands
+   ssh user@100.66.145.48 "command"
+   ```
+
+4. **File transfer via Tailscale:**
+   ```bash
+   # Use Tailscale IP for scp/rsync
+   scp file.txt user@100.66.145.48:~/
+   rsync -avz ./directory/ user@100.66.145.48:~/destination/
+   ```
+
+5. **When Tailscale isn't available:**
+   - Ensure Tailscale app is running on both machines
+   - Check network allows Tailscale (some corporate networks block it)
+   - Fall back to `croc` for file transfer (no VPN needed)
+
+**Advantages of Tailscale-First Approach:**
+- ✅ No port forwarding or firewall configuration needed
+- ✅ End-to-end encrypted WireGuard tunnel
+- ✅ Access any service on remote machine (web UIs, APIs, databases)
+- ✅ Works across NATs and firewalls
+- ✅ SSH only when you need shell access
+- ✅ Persistent IP addressing (always the same Tailscale IP)
+
+### Workflow 3: "Permission Denied" Debug
 
 1. **Enable verbose logging:**
    ```bash
@@ -371,7 +421,7 @@ croc YOUR-CODE-HERE
    ssh -o PubkeyAuthentication=no user@host "chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
    ```
 
-### Workflow 3: Too Many Keys
+### Workflow 4: Too Many Keys
 
 1. **List your keys:**
    ```bash

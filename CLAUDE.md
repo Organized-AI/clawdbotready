@@ -27,43 +27,63 @@ A comprehensive deployment toolkit and documentation hub that makes Clawdbot (AI
 - **Package Manager**: pnpm
 
 ## Project Structure
+
+**Organized by Priority** (Primary focus → Supporting tools → Meta-tooling)
+
 ```
 /
-├── .archive/                      → Archived/deprecated files (gitignored)
-├── .claude/                       → Claude Code configuration
-│   ├── settings.json              → Permissions and project config
-│   ├── commands/                  → Custom slash commands
-│   │   ├── boris/                 → Boris methodology commands
-│   │   ├── oc/                    → Organized Codebase commands
-│   │   └── session/               → Session management commands
-│   └── skills/                    → Installed Claude skills
-├── .claude-sessions/              → Session archive for cross-machine sync
-├── CLI/                           → Custom command-line tools (iCloud synced)
-│   ├── README.md                  → Tool documentation
-│   └── session-tools.sh           → Cross-machine session management
-├── DOCUMENTATION/                 → All deployment guides and docs
-│   ├── clawdbot-*.md              → Clawdbot-specific guides
-│   ├── openclaw-*.md              → OpenClaw setup guides
-│   ├── ssh-*.md                   → SSH tunnel documentation
-│   ├── tailscale-*.md             → Tailscale networking guides
-│   ├── telegram-*.md              → Telegram bot setup
-│   └── team-deployment-guide.md   → Team deployment workflows
-├── PLANNING/                      → Project planning artifacts
-│   ├── PROJECT.md                 → Vision, goals, success metrics
-│   ├── REQUIREMENTS.md            → v1/v2 feature breakdown
-│   ├── ROADMAP.md                 → Milestone-based implementation plan
-│   └── STATE.md                   → Current decisions and blockers
-├── openclaw-vm-setup/             → VM-isolated deployment toolkit
-│   ├── config/                    → Configuration templates
-│   ├── scripts/                   → VM helper utilities
-│   └── PLANNING/                  → Phase 0-8 implementation plans
-├── openclaw-native-setup/         → Native macOS deployment toolkit
-├── scripts/                       → Standalone automation scripts
-│   ├── auto-deploy-openclaw.sh    → Automated deployment
+├── 01-OPENCLAW-DEPLOYMENT/        → PRIMARY: OpenClaw agent deployment
+│   ├── openclaw-vm-setup/         → VM-isolated deployment toolkit
+│   │   ├── config/                → Configuration templates
+│   │   ├── scripts/               → VM helper utilities
+│   │   └── PLANNING/              → Phase 0-8 implementation plans
+│   └── openclaw-native-setup/     → Native macOS deployment toolkit
+│       ├── config/
+│       ├── scripts/
+│       └── PLANNING/
+│
+├── 02-CLI-TOOLS/                  → SECONDARY: Workflow utilities
+│   └── CLI/                       → Session management & sync tools
+│       ├── README.md              → Tool documentation
+│       ├── session-tools.sh       → Cross-machine session management
+│       └── claude-auto-sync.sh    → Auto iCloud sync
+│
+├── 03-ACTIVE-PROJECTS/            → TERTIARY: Other active work
+│   └── google-ads-cli/            → Google Ads CLI rebuild project
+│       ├── CLAUDE_TASK_*.md       → Task specification
+│       └── phases/                → Implementation phases
+│
+├── scripts/                       → OpenClaw automation scripts
+│   ├── auto-deploy-openclaw.sh   → Automated deployment
 │   ├── deploy-openclaw-telegram.sh
-│   ├── install-openclaw.sh        → Installation script
+│   ├── install-openclaw.sh       → Installation script
 │   ├── openclaw-health-monitor.sh → Health monitoring
 │   └── setup-openclaw-autostart.sh
+│
+├── DOCUMENTATION/                 → All deployment guides and docs
+│   ├── clawdbot-*.md             → Clawdbot-specific guides
+│   ├── openclaw-*.md             → OpenClaw setup guides
+│   ├── ssh-*.md                  → SSH tunnel documentation
+│   ├── tailscale-*.md            → Tailscale networking guides
+│   └── telegram-*.md             → Telegram bot setup
+│
+├── PLANNING/                      → Clawdbot project planning
+│   ├── PROJECT.md                → Vision, goals, success metrics
+│   ├── REQUIREMENTS.md           → v1/v2 feature breakdown
+│   ├── ROADMAP.md                → Milestone-based implementation plan
+│   └── STATE.md                  → Current decisions and blockers
+│
+├── .claude/                       → META: Claude Code configuration
+│   ├── settings.json             → Permissions and project config
+│   ├── commands/                 → Custom slash commands
+│   │   ├── boris/                → Boris methodology commands
+│   │   ├── oc/                   → Organized Codebase commands
+│   │   └── session/              → Session management commands
+│   ├── agents/                   → Custom agent definitions
+│   └── skills/                   → 25+ Claude Code skills (meta-tooling)
+│
+├── .archive/                      → Archived/deprecated files
+├── .claude-sessions/              → Session archive for cross-machine sync
 ├── CLAUDE.md                      → This file (AI context)
 ├── README.md                      → User-facing project overview
 └── justfile                       → Project command runner
@@ -246,32 +266,32 @@ Before marking a milestone complete:
 
 ### Common Commands
 ```bash
-# Check VM status
-cd openclaw-vm-setup && ./scripts/status.sh
+# OpenClaw VM Operations
+cd 01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup
+./scripts/status.sh        # Check VM status
+./scripts/connect.sh       # Connect to VM
+./scripts/tunnel.sh        # Create SSH tunnel to Gateway
+./setup.sh all             # Run full setup
+./setup.sh 1               # Run specific phase
 
-# Connect to VM
-./scripts/connect.sh
+# CLI Tools (Session Management)
+cd 02-CLI-TOOLS/CLI
+./session-tools.sh list          # List recent sessions
+./session-tools.sh search "term" # Search session content
+./session-tools.sh sync          # Sync sessions to iCloud
 
-# Create SSH tunnel to Gateway
-./scripts/tunnel.sh
-
-# Run full setup
-./setup.sh all
-
-# Run specific phase
-./setup.sh 1  # Just Phase 1
-
-# Session management (CLI tools)
-./CLI/session-tools.sh list          # List recent sessions
-./CLI/session-tools.sh search "term" # Search session content
-./CLI/session-tools.sh sync          # Sync sessions to iCloud
+# Active Projects
+cd 03-ACTIVE-PROJECTS/google-ads-cli
+# See project-specific README for commands
 ```
 
 ### File Locations
-- VM config: `openclaw-vm-setup/config/settings.env`
-- Security allowlist: `openclaw-vm-setup/config/exec-approvals.json`
-- Logs: `openclaw-vm-setup/logs/`
-- Backups: `openclaw-vm-setup/backups/`
+- VM config: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/config/settings.env`
+- Security allowlist: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/config/exec-approvals.json`
+- Logs: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/logs/`
+- Backups: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/backups/`
+- CLI tools: `02-CLI-TOOLS/CLI/`
+- Active projects: `03-ACTIVE-PROJECTS/`
 
 ### Important Links
 - Lume Docs: https://lume.dev/docs

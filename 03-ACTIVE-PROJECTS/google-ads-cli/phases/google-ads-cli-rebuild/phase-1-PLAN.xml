@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task type="auto">
+  <name>Phase 1: Project Setup</name>
+  <description>Initialize Node.js project structure on M1 Mac Mini for Google Ads CLI</description>
+
+  <remote>
+    <host>openclaw@100.66.145.48</host>
+    <working_dir>~/google-ads-cli</working_dir>
+  </remote>
+
+  <files>
+    <file action="create">~/google-ads-cli/package.json</file>
+    <file action="create">~/google-ads-cli/tsconfig.json</file>
+    <file action="create">~/google-ads-cli/src/</file>
+    <file action="create">~/google-ads-cli/src/commands/</file>
+    <file action="create">~/google-ads-cli/src/lib/</file>
+    <file action="create">~/google-ads-cli/src/types/</file>
+  </files>
+
+  <action>
+    1. SSH to M1 Mac Mini (openclaw@100.66.145.48)
+    2. Create ~/google-ads-cli directory
+    3. Run: npm init -y
+    4. Install dependencies:
+       - google-ads-api (production)
+       - commander (production)
+       - dotenv (production)
+       - typescript, @types/node, tsx (dev)
+    5. Create directory structure: src/{commands,lib,types}
+    6. Create basic tsconfig.json with ES2020, Node resolution, strict mode
+  </action>
+
+  <verify>
+    - package.json exists with correct dependencies
+    - node_modules/ populated (~200 packages vs 15,923 Python files)
+    - Directory structure created (src/commands, src/lib, src/types)
+    - tsconfig.json exists
+    - npm list shows no errors
+  </verify>
+
+  <done>
+    - Project initialized and ready for implementation
+    - All dependencies installed
+    - TypeScript configured
+    - Directory structure in place
+  </done>
+</task>

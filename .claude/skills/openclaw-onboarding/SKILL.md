@@ -13,10 +13,11 @@ description: |
 
 # OpenClaw Onboarding Expert
 
-**Version**: 2.3.0
-**Updated**: 2026-02-02
+**Version**: 2.4.0
+**Updated**: 2026-02-05
 **Type**: AI Agent Skill
 **Category**: Deployment & Infrastructure
+**Companion Skill**: openclaw-session-learning v1.0.0
 
 ## What This Skill Does
 
@@ -43,6 +44,8 @@ Use this skill when:
 - Preparing for production deployment
 - Running validation tests
 - User asks "how do I set up OpenClaw" or similar
+
+**💡 Pro Tip**: Use `/openclaw-session-learning` BEFORE this skill to load historical deployment intelligence from 36+ previous sessions. This prevents repeated mistakes and shows the optimal path forward.
 
 ## Trigger Patterns
 

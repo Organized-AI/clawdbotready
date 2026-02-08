@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task type="auto">
+  <name>Phase 5: Testing & Verification</name>
+  <description>Comprehensive testing of CLI and OpenClaw integration</description>
+
+  <remote>
+    <host>openclaw@100.66.145.48</host>
+    <working_dir>~/google-ads-cli</working_dir>
+  </remote>
+
+  <dependencies>
+    <requires>phase-4-PLAN.xml</requires>
+  </dependencies>
+
+  <files>
+    <file action="create">~/google-ads-cli/VERIFICATION-RESULTS.md</file>
+    <file action="modify">~/scripts/openclaw-comprehensive-health-check.sh</file>
+  </files>
+
+  <action>
+    1. Test CLI standalone:
+       google-ads-cli campaigns:list --filter "Blade"
+       google-ads-cli metrics:cpa --filter "Blade" --date TODAY
+       google-ads-cli budget:update --campaign-id TEST --amount 500 --dry-run
+       google-ads-cli report:generate --date LAST_7_DAYS
+       google-ads-cli campaign:pause --campaign-id TEST --dry-run
+
+    2. Test multi-account support:
+       google-ads-cli campaigns:list --customer-id <secondary-account>
+
+    3. Monitor file descriptors during CLI usage:
+       # Before
+       FD_BEFORE=$(lsof -p $(pgrep openclaw-gateway) | wc -l)
+       # Use CLI
+       google-ads-cli campaigns:list
+       # After
+       FD_AFTER=$(lsof -p $(pgrep openclaw-gateway) | wc -l)
+       # Should be unchanged
+
+    4. Test OpenClaw integration via Telegram:
+       # Send message: "Show me CPA metrics for Blade campaigns today"
+       # Verify Claude executes: google-ads-cli metrics:cpa --filter "Blade" --date TODAY
+       # Verify results returned
+
+    5. Check for EMFILE errors:
+       tail -100 ~/.openclaw/logs/gateway.err.log | grep EMFILE
+       # Should be empty
+
+    6. Run verification script from CLAUDE_TASK file:
+       # All 7 checks should pass
+
+    7. Update health monitor:
+       # Add check_google_ads_cli() function to health check script
+       # Test health check runs successfully
+
+    8. Document results in VERIFICATION-RESULTS.md
+  </action>
+
+  <verify>
+    - All CLI commands execute successfully
+    - Multi-account support works
+    - File descriptors stable during CLI use (~56 throughout)
+    - Telegram integration functional
+    - Zero EMFILE errors in logs
+    - Verification script shows 7/7 passing
+    - Health monitor updated and working
+  </verify>
+
+  <done>
+    - Full testing complete
+    - All success criteria met
+    - CLI functional standalone and via OpenClaw
+    - File descriptor issue permanently resolved
+    - Verification results documented
+    - Ready for 24-hour stability test
+  </done>
+</task>

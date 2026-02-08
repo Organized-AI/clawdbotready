@@ -99,16 +99,18 @@ For teams managing Clawdbot deployments, the [Team Operations Guide](clawdbot-te
 ## Quick Start
 
 ### For VM-Isolated Deployment (Recommended)
-1. Review the [VM Security Hardening Guide](openclaw-macos-vm-security-hardening-guide.md)
-2. Run the automated setup: `cd openclaw-vm-setup && ./setup.sh`
-3. Follow the [Customer Setup Guide](clawdbot-customer-setup-guide.md) for Gateway configuration
-4. For teams, review the [Team Operations Guide](clawdbot-team-operations-guide.md)
+1. Navigate to deployment toolkit: `cd 01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup`
+2. Review the [VM Security Hardening Guide](DOCUMENTATION/openclaw-macos-vm-security-hardening-guide.md)
+3. Run the automated setup: `./setup.sh`
+4. Follow the [Customer Setup Guide](clawdbot-customer-setup-guide.md) for Gateway configuration
+5. For teams, review the [Team Operations Guide](clawdbot-team-operations-guide.md)
 
 ### For Native macOS Deployment
-1. Review the [Native macOS Lockdown Guide](openclaw-native-macos-lockdown-guide.md)
-2. Follow security hardening steps
-3. Install Gateway directly on host
-4. Configure according to [Customer Setup Guide](clawdbot-customer-setup-guide.md)
+1. Navigate to deployment toolkit: `cd 01-OPENCLAW-DEPLOYMENT/openclaw-native-setup`
+2. Review the [Native macOS Lockdown Guide](DOCUMENTATION/openclaw-native-macos-lockdown-guide.md)
+3. Follow security hardening steps
+4. Install Gateway directly on host
+5. Configure according to [Customer Setup Guide](clawdbot-customer-setup-guide.md)
 
 ### General Resources
 - [Deployment Guide](clawdbot-deployment-guide.md) - Compare all platform options
