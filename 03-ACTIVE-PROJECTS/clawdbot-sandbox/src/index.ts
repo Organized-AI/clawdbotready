@@ -41,6 +41,15 @@ export {
 	seedContextFiles,
 	seedCustomerFiles,
 } from "./sandbox/ai-tool/index.js";
+export {
+	CommandExecutionError,
+	ConfigValidationError,
+	NetworkBlockedError,
+	PermissionDeniedError,
+	PluginLifecycleError,
+	SandboxCreationError,
+	SandboxError,
+} from "./sandbox/errors.js";
 export { createSandbox } from "./sandbox/fs-tiers/index.js";
 export type { HttpMethod, NetworkManagerConfig, NetworkPreset } from "./sandbox/network/index.js";
 export {
