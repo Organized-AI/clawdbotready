@@ -52,6 +52,19 @@ export {
 	NetworkPresetSchema,
 	PRESETS,
 } from "./sandbox/network/index.js";
+export type { PermissionCheckResult } from "./sandbox/permissions/index.js";
+export {
+	CommandPermission,
+	checkFsAccess,
+	checkNetworkAccess,
+	getCommandAllowlist,
+	matchCommand,
+	PermissionLevel,
+	PermissionManager,
+	parseCommandSegments,
+	TierLevel,
+	TierPermissions,
+} from "./sandbox/permissions/index.js";
 export type {
 	SkillDefinition,
 	SkillExecRequest,
