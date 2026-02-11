@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenClaw Architecture Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-dim: #8888a0;
+    --accent: #ff6b35;
+    --accent2: #00d4aa;
+    --accent3: #7b68ee;
+    --accent4: #ff4757;
+    --accent5: #ffd93d;
+    --blue: #4facfe;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    padding: 32px;
+    min-height: 100vh;
+  }
+
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; color: var(--accent); letter-spacing: -0.5px; }
+  .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 32px; font-family: 'JetBrains Mono', monospace; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1200px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .card.gateway::before { background: var(--accent); }
+  .card.agent::before { background: var(--accent2); }
+  .card.tools::before { background: var(--accent3); }
+  .card.channels::before { background: var(--blue); }
+  .card.context::before { background: var(--accent4); }
+  .card.automation::before { background: var(--accent5); }
+  .card.apify::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .card-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card.gateway .card-title { color: var(--accent); }
+  .card.agent .card-title { color: var(--accent2); }
+  .card.tools .card-title { color: var(--accent3); }
+  .card.channels .card-title { color: var(--blue); }
+  .card.context .card-title { color: var(--accent4); }
+  .card.automation .card-title { color: var(--accent5); }
+  .card.apify .card-title { color: var(--accent); }
+  .tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); margin: 2px 4px 2px 0; }
+  .item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.5; }
+  .item:last-child { border-bottom: none; }
+  .item-label { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .item-desc { color: var(--text-dim); font-size: 12px; }
+  .full-width { grid-column: 1 / -1; }
+  .flow { display: flex; align-items: center; gap: 12px; padding: 12px 0; flex-wrap: wrap; }
+  .flow-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: nowrap; }
+  .flow-arrow { color: var(--text-dim); font-size: 16px; }
+  .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); margin: 24px 0 12px 0; font-weight: 600; }
+  .highlight { background: rgba(255, 107, 53, 0.1); border: 1px dashed var(--accent); border-radius: 8px; padding: 12px 16px; margin-top: 12px; font-size: 12px; line-height: 1.6; }
+  .highlight strong { color: var(--accent); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+</head>
+<body>
+
+<h1>OpenClaw Architecture Map</h1>
+<p class="subtitle">// Clawdbot Ready — Apify integration surface areas</p>
+
+<div class="grid">
+
+<div class="card gateway">
+  <div class="card-title">⚡ Gateway (The Daemon)</div>
+  <div class="item"><div class="item-label">What it is</div><div class="item-desc">Single long-lived process that owns everything. WebSocket server on <span class="tag">127.0.0.1:18789</span>. One per host. All clients, nodes, and channels connect here.</div></div>
+  <div class="item"><div class="item-label">Protocol</div><div class="item-desc">JSON over WebSocket. First frame must be <span class="tag">connect</span>. Then req/res + server-push events. Idempotency keys for side effects.</div></div>
+  <div class="item"><div class="item-label">Owns</div><div class="item-desc"><span class="tag">messaging channels</span><span class="tag">cron scheduler</span><span class="tag">heartbeat runner</span><span class="tag">session management</span><span class="tag">tool wiring</span><span class="tag">pairing/auth</span></div></div>
+  <div class="item"><div class="item-label">Config</div><div class="item-desc"><span class="tag">~/.openclaw/openclaw.json</span> — single source of truth for all settings</div></div>
+</div>
+
+<div class="card agent">
+  <div class="card-title">🤖 Agent Runtime</div>
+  <div class="item"><div class="item-label">Core loop</div><div class="item-desc">Message → context assembly → model inference → tool execution → streaming reply → persist. Serialized per session.</div></div>
+  <div class="item"><div class="item-label">Workspace files (injected at session start)</div><div class="item-desc"><span class="tag">AGENTS.md</span> ops instructions <span class="tag">SOUL.md</span> persona/tone <span class="tag">TOOLS.md</span> tool guidance <span class="tag">IDENTITY.md</span> name/vibe <span class="tag">USER.md</span> user profile <span class="tag">HEARTBEAT.md</span> periodic checklist</div></div>
+  <div class="item"><div class="item-label">Skills</div><div class="item-desc">Loaded from: bundled → <span class="tag">~/.openclaw/skills</span> → <span class="tag">&lt;workspace&gt;/skills</span>. Each is a folder with SKILL.md (YAML frontmatter + instructions). Agent reads on demand.</div></div>
+  <div class="item"><div class="item-label">Sessions</div><div class="item-desc">JSONL transcripts at <span class="tag">~/.openclaw/agents/&lt;id&gt;/sessions/</span>. Queue modes: steer, followup, collect.</div></div>
+</div>
+
+<div class="card context">
+  <div class="card-title">🧠 Context &amp; Memory</div>
+  <div class="item"><div class="item-label">Context = everything the model sees</div><div class="item-desc">System prompt + conversation history + tool results + attachments. Bounded by model's context window.</div></div>
+  <div class="item"><div class="item-label">Compaction</div><div class="item-desc">When window fills up → summarize older messages → keep recent ones. Pre-compaction memory flush writes durable notes to disk before summarizing.</div></div>
+  <div class="item"><div class="item-label">Session Pruning</div><div class="item-desc">Trims old tool results in-memory (doesn't rewrite transcript). Separate from compaction.</div></div>
+  <div class="item"><div class="item-label">Memory</div><div class="item-desc">Plain Markdown on disk. <span class="tag">MEMORY.md</span> (curated long-term) + <span class="tag">memory/YYYY-MM-DD.md</span> (daily log). Vector search via embeddings (local or remote). Hybrid BM25 + vector for retrieval.</div></div>
+  <div class="highlight"><strong>Context rot = </strong> tool results filling the window → compaction summarizes away important details → agent "forgets." This is where Apify's pre-fetched data patterns help — keep tool output small and structured.</div>
+</div>
+
+<div class="card tools">
+  <div class="card-title">🔧 Built-in Tools</div>
+  <div class="two-col">
+    <div>
+      <div class="item"><div class="item-label">exec / process</div><div class="item-desc">Shell commands, background jobs</div></div>
+      <div class="item"><div class="item-label">read / write / edit</div><div class="item-desc">Filesystem ops in workspace</div></div>
+      <div class="item"><div class="item-label">browser</div><div class="item-desc">Playwright-backed, snapshots, actions</div></div>
+      <div class="item"><div class="item-label">web_search / web_fetch</div><div class="item-desc">Brave Search + URL fetch</div></div>
+    </div>
+    <div>
+      <div class="item"><div class="item-label">message</div><div class="item-desc">Send across all channels</div></div>
+      <div class="item"><div class="item-label">cron</div><div class="item-desc">Schedule jobs from within agent</div></div>
+      <div class="item"><div class="item-label">sessions_*</div><div class="item-desc">Cross-session comms, spawn sub-agents</div></div>
+      <div class="item"><div class="item-label">nodes</div><div class="item-desc">Camera, location, run on macOS</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card channels">
+  <div class="card-title">📱 Channels (I/O surfaces)</div>
+  <div class="item"><div class="item-desc" style="line-height: 2;"><span class="tag">WhatsApp</span><span class="tag">Telegram</span><span class="tag">Discord</span><span class="tag">Slack</span><span class="tag">Signal</span><span class="tag">iMessage</span><span class="tag">MS Teams</span><span class="tag">Google Chat</span><span class="tag">IRC</span><span class="tag">Matrix</span><span class="tag">LINE</span><span class="tag">WebChat</span></div></div>
+  <div class="item"><div class="item-label">Key point</div><div class="item-desc">Gateway owns all channel connections. Agent sends via <span class="tag">message</span> tool. Cron/heartbeat can deliver to any channel. This is what makes OpenClaw feel like "your phone is an AI."</div></div>
+</div>
+
+<div class="card automation">
+  <div class="card-title">⏰ Automation Layer</div>
+  <div class="item"><div class="item-label">Heartbeat</div><div class="item-desc">Periodic agent turns in main session (default 30min). Reads HEARTBEAT.md checklist. Replies HEARTBEAT_OK if nothing to report. Delivers alerts to configured channel.</div></div>
+  <div class="item"><div class="item-label">Cron</div><div class="item-desc">Persistent scheduled jobs. Two modes: <strong>main session</strong> (system event → next heartbeat) or <strong>isolated</strong> (fresh session, no carry-over). Delivery to any channel. Model/thinking overrides per job.</div></div>
+  <div class="item"><div class="item-label">Hooks</div><div class="item-desc">Event-driven scripts: agent:bootstrap, before_tool_call, message_received, etc. Plugins can intercept the full lifecycle.</div></div>
+  <div class="item"><div class="item-label">Webhooks</div><div class="item-desc">HTTP endpoint that triggers agent turns from external services.</div></div>
+</div>
+
+<div class="card full-width" style="border-color: var(--border);">
+  <div class="card-title" style="color: var(--text);">🔄 Agent Loop Flow</div>
+  <div class="flow">
+    <div class="flow-box" style="border-color: var(--blue);">Message In<br><small style="color:var(--text-dim)">channel / cron / heartbeat</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Session Resolve<br><small style="color:var(--text-dim)">queue serialization</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color: var(--accent4);">Context Assembly<br><small style="color:var(--text-dim)">system prompt + history + skills</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color: var(--accent3);">Model Inference<br><small style="color:var(--text-dim)">Claude / GPT / etc</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color: var(--accent2);">Tool Execution<br><small style="color:var(--text-dim)">exec, browser, skills</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color: var(--accent5);">Stream Reply<br><small style="color:var(--text-dim)">to channel / cron delivery</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Persist<br><small style="color:var(--text-dim)">JSONL transcript</small></div>
+  </div>
+  <div class="highlight" style="border-color: var(--accent2); background: rgba(0, 212, 170, 0.06);"><strong style="color: var(--accent2);">Where Apify plugs in: </strong>Tool Execution phase. Skills teach the agent when/how to call Apify actors via exec (CLI) or direct API calls. Results come back as tool output → enter context window. The smaller and more structured the output, the less context rot.</div>
+</div>
+
+<div class="card apify full-width">
+  <div class="card-title">🔌 Apify × OpenClaw Integration Points</div>
+  <div class="two-col">
+    <div>
+      <div class="section-label">Pattern 1: Skills (Agent-Initiated)</div>
+      <div class="item"><div class="item-label">How</div><div class="item-desc">SKILL.md teaches agent to call Apify actors when relevant. Agent decides when to invoke. Runs via exec tool (Apify CLI or curl).</div></div>
+      <div class="item"><div class="item-label">Good for</div><div class="item-desc">On-demand scraping, lead gen, competitor research. Agent autonomously decides "I need web data" and calls the right actor.</div></div>
+      <div class="item"><div class="item-label">Context cost</div><div class="item-desc">⚠️ Each tool result enters context. Need structured, minimal output.</div></div>
+      <div class="section-label">Pattern 2: Cron + Pre-fetch (Scheduled)</div>
+      <div class="item"><div class="item-label">How</div><div class="item-desc">Cron job triggers Apify actor on schedule → results stored in Apify dataset or local file. Agent reads pre-fetched data, never scrapes live.</div></div>
+      <div class="item"><div class="item-label">Good for</div><div class="item-desc">Morning briefings, price monitoring, social listening. Separates collection from interaction.</div></div>
+      <div class="item"><div class="item-label">Context cost</div><div class="item-desc">✅ Minimal — agent reads a summary file, not raw scrape output.</div></div>
+    </div>
+    <div>
+      <div class="section-label">Pattern 3: Webhook → Agent Turn</div>
+      <div class="item"><div class="item-label">How</div><div class="item-desc">Apify actor completes → webhook hits OpenClaw → triggers isolated agent turn with results. Agent processes and delivers to channel.</div></div>
+      <div class="item"><div class="item-label">Good for</div><div class="item-desc">Event-driven alerts. Price drops, new mentions, content changes. Push instead of poll.</div></div>
+      <div class="item"><div class="item-label">Context cost</div><div class="item-desc">✅ Isolated session — no main context pollution.</div></div>
+      <div class="section-label">Pattern 4: mcpc / MCP (Direct Tool)</div>
+      <div class="item"><div class="item-label">How</div><div class="item-desc">Agent calls Apify actors as MCP tools. Each tool result returns to context.</div></div>
+      <div class="item"><div class="item-label">Good for</div><div class="item-desc">Quick lookups, single-actor calls. Not great for chains.</div></div>
+      <div class="item"><div class="item-label">Context cost</div><div class="item-desc">⚠️ Every result = ~400+ tokens. Chains compound fast. This is the context rot problem.</div></div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
