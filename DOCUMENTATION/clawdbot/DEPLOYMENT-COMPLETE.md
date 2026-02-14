@@ -62,7 +62,7 @@ A complete, production-ready OpenClaw Gateway deployment system with:
 | File | Purpose | When to Use |
 |------|---------|-------------|
 | [.claude/skills/openclaw-onboarding/skill.md](.claude/skills/openclaw-onboarding/skill.md) | AI-assisted setup | With Claude Code |
-| [DOCUMENTATION/openclaw-onboarding-skill-summary.md](DOCUMENTATION/openclaw-onboarding-skill-summary.md) | Skill enhancement guide | Understanding changes |
+| [DOCUMENTATION/openclaw/openclaw-onboarding-skill-summary.md](../openclaw/openclaw-onboarding-skill-summary.md) | Skill enhancement guide | Understanding changes |
 
 ---
 
@@ -351,16 +351,12 @@ See [DEPLOYMENT-LESSONS-LEARNED.md](DEPLOYMENT-LESSONS-LEARNED.md) for comprehen
 ### Technical Guides
 - [SETUP GUIDES/openclaw-vm-setup/README.md](SETUP%20GUIDES/openclaw-vm-setup/README.md) - VM deployment
 - [.claude/skills/openclaw-onboarding/skill.md](.claude/skills/openclaw-onboarding/skill.md) - Claude Code skill
-- [DOCUMENTATION/openclaw-onboarding-skill-summary.md](DOCUMENTATION/openclaw-onboarding-skill-summary.md) - Skill enhancements
+- [DOCUMENTATION/openclaw/openclaw-onboarding-skill-summary.md](../openclaw/openclaw-onboarding-skill-summary.md) - Skill enhancements
 
 ### Planning & Context
 - [PLANNING/PROJECT.md](PLANNING/PROJECT.md) - Project vision
 - [PLANNING/ROADMAP.md](PLANNING/ROADMAP.md) - Implementation plan
 - [CLAUDE.md](CLAUDE.md) - AI context file
-
-### Integration Guides
-- [DOCUMENTATION/moltbook-integration-guide.md](DOCUMENTATION/moltbook-integration-guide.md) - Moltbook integration
-- [PLANNING/OPENCLAW-GATEWAY-ENHANCEMENTS.md](PLANNING/OPENCLAW-GATEWAY-ENHANCEMENTS.md) - Enhancement proposals
 
 ---
 

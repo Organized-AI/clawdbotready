@@ -437,9 +437,9 @@ Before asking for help, verify:
 
 ## Related Documentation
 
-- [Remote Support Guide](../REMOTE-SUPPORT-GUIDE.md) - SSH access and Mac Mini management
-- [Tailscale Explained](./tailscale-explained.md) - Network connectivity setup
-- [Client Setup Guide](../CLIENT-SETUP-GUIDE.md) - Initial OpenClaw configuration
+- [Remote Support Guide](../client-support/REMOTE-SUPPORT-GUIDE.md) - SSH access and Mac Mini management
+- [Tailscale Explained](../networking/tailscale-explained.md) - Network connectivity setup
+- [Client Setup Guide](../clawdbot/CLIENT-SETUP-GUIDE.md) - Initial OpenClaw configuration
 
 ---
 

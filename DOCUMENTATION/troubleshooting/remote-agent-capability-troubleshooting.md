@@ -666,8 +666,8 @@ ssh "openclaw@$CUSTOMER_IP" "ps aux | grep openclaw-gateway | grep -v grep && ec
 
 ## Related Documentation
 
-- [Tailscale Device Management](./tailscale-device-management.md) - Managing customer devices
-- [Remote Support Guide](./REMOTE-SUPPORT-GUIDE.md) - General remote support procedures
+- [Tailscale Device Management](../networking/tailscale-device-management.md) - Managing customer devices
+- [Remote Support Guide](../client-support/REMOTE-SUPPORT-GUIDE.md) - General remote support procedures
 - [Dashboard Troubleshooting](./dashboard-troubleshooting.md) - Remote dashboard access
 
 ---

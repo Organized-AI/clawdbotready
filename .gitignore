@@ -23,6 +23,20 @@ build/
 # Secrets
 .vm_ip
 .gateway_token
+*.token
+
+# GCP / OAuth Credentials
+client_secret*.json
+credentials.json
+token.json
+**/service-account*.json
+*.p12
+
+# Google Ads CLI
+config.json
+!**/package.json
+!**/.eslintrc.json
+!**/tsconfig.json
 
 # SSH Keys and Config
 *.key
@@ -62,3 +76,6 @@ settings.env
 # Logs
 logs/
 *.log
+
+# Analysis raw data (pulled from remote)
+.analysis/raw/

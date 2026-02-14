@@ -1,0 +1,184 @@
+{
+  "version": "1.0",
+  "description": "OpenClaw Cloudflare Workers exec-approvals - Secure defaults for containerized deployment",
+  "default_action": "deny",
+  "log_all_attempts": true,
+  "log_file": "/root/clawd/logs/exec-approvals.log",
+
+  "notes": [
+    "This exec-approvals config is deployed INTO the Cloudflare Sandbox container.",
+    "The container runs as root in an isolated Linux environment (not macOS).",
+    "Paths reflect the container filesystem, not the host.",
+    "Browser automation (CDP) has its own auth layer via CDP_SECRET."
+  ],
+
+  "rules": [
+    {
+      "id": "allow-echo",
+      "description": "Basic output",
+      "binary": "/bin/echo",
+      "action": "allow",
+      "argument_rules": {
+        "max_args": 10,
+        "max_total_length": 1000,
+        "forbidden_patterns": [">>", ">", "|", ";", "`", "$(", "&&"]
+      }
+    },
+    {
+      "id": "allow-date",
+      "description": "Date/time queries",
+      "binary": "/bin/date",
+      "action": "allow",
+      "argument_rules": {
+        "max_args": 3
+      }
+    },
+    {
+      "id": "allow-ls-workspace",
+      "description": "List workspace directories",
+      "binary": "/bin/ls",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/root/clawd"],
+        "forbidden_patterns": ["..", "/.ssh", "/.gnupg"]
+      }
+    },
+    {
+      "id": "allow-cat-workspace",
+      "description": "Read workspace files",
+      "binary": "/bin/cat",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/root/clawd/workspace"],
+        "forbidden_patterns": [
+          "..",
+          ".env",
+          "password",
+          "secret",
+          "credential",
+          "token",
+          ".pem",
+          ".key"
+        ],
+        "max_file_size_kb": 1024
+      }
+    },
+    {
+      "id": "allow-mkdir-workspace",
+      "description": "Create workspace directories",
+      "binary": "/bin/mkdir",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/root/clawd/workspace"],
+        "forbidden_patterns": [".."]
+      }
+    },
+    {
+      "id": "allow-cp-workspace",
+      "description": "Copy within workspace",
+      "binary": "/bin/cp",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/root/clawd/workspace"],
+        "forbidden_patterns": ["..", "-r /", "-R /"]
+      }
+    },
+    {
+      "id": "allow-pwd",
+      "description": "Print working directory",
+      "binary": "/bin/pwd",
+      "action": "allow"
+    },
+    {
+      "id": "allow-whoami",
+      "description": "Current user",
+      "binary": "/usr/bin/whoami",
+      "action": "allow"
+    },
+    {
+      "id": "allow-node-skills",
+      "description": "Run Node.js skills (browser automation, etc.)",
+      "binary": "/usr/local/bin/node",
+      "action": "allow",
+      "argument_rules": {
+        "required_prefix": ["/root/clawd/skills"],
+        "forbidden_patterns": ["--eval", "-e", "child_process", "require('fs')"]
+      }
+    },
+
+    {
+      "id": "deny-curl",
+      "description": "DENY curl - exfiltration risk",
+      "binary": "/usr/bin/curl",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-wget",
+      "description": "DENY wget - exfiltration risk",
+      "binary": "/usr/bin/wget",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-nc",
+      "description": "DENY netcat - backdoor risk",
+      "binary": "/usr/bin/nc",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-ssh",
+      "description": "DENY ssh - lateral movement",
+      "binary": "/usr/bin/ssh",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-kill",
+      "description": "DENY kill - process termination",
+      "binary": "/bin/kill",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-chmod",
+      "description": "DENY chmod - permission changes",
+      "binary": "/bin/chmod",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-chown",
+      "description": "DENY chown - ownership changes",
+      "binary": "/bin/chown",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-apt",
+      "description": "DENY apt - package installation",
+      "binary": "/usr/bin/apt",
+      "action": "deny",
+      "alert": true
+    },
+    {
+      "id": "deny-pip",
+      "description": "DENY pip - package installation",
+      "binary": "/usr/bin/pip",
+      "action": "deny",
+      "alert": true
+    }
+  ],
+
+  "environment_blocklist": [
+    "PATH",
+    "LD_LIBRARY_PATH",
+    "LD_PRELOAD",
+    "NODE_OPTIONS",
+    "PYTHONPATH",
+    "BASH_ENV",
+    "ENV",
+    "CDPATH"
+  ]
+}

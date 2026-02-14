@@ -478,9 +478,9 @@ Contact OpenClaw support if:
 
 ## Related Documentation
 
-- [Telegram Channel Troubleshooting](./TELEGRAM-CHANNEL-TROUBLESHOOTING.md)
-- [OpenClaw Gateway Deployment](./openclaw-native-macos-lockdown-guide.md)
-- [Health Monitoring Setup](./DEPLOYMENT-LESSONS-LEARNED.md)
+- [Telegram Channel Troubleshooting](../messaging/TELEGRAM-CHANNEL-TROUBLESHOOTING.md)
+- [OpenClaw Gateway Deployment](../openclaw/openclaw-native-macos-lockdown-guide.md)
+- [Health Monitoring Setup](../clawdbot/DEPLOYMENT-LESSONS-LEARNED.md)
 
 ---
 

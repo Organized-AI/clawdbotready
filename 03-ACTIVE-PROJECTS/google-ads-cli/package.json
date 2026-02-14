@@ -1,0 +1,27 @@
+{
+  "name": "google-ads-cli",
+  "version": "3.0.0",
+  "description": "CLI tool for Google Ads API — built for OpenClaw Gateway",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "google-ads-cli": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "google-ads-api": "^23.0.0",
+    "commander": "^14.0.3",
+    "dotenv": "^17.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.2.1",
+    "tsx": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

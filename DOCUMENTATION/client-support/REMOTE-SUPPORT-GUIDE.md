@@ -35,7 +35,7 @@ ssh -f -N -L 18790:127.0.0.1:18789 openclaw@100.66.145.48
 http://localhost:18790/?token=<GATEWAY_TOKEN>
 ```
 
-See [Dashboard Troubleshooting Guide](DOCUMENTATION/dashboard-troubleshooting.md) for detailed instructions.
+See [Dashboard Troubleshooting Guide](../troubleshooting/dashboard-troubleshooting.md) for detailed instructions.
 
 ### Emergency Quick Commands
 
@@ -637,9 +637,9 @@ Before delivering Mac Mini to client:
 
 ## Related Documentation
 
-- [Dashboard Troubleshooting Guide](DOCUMENTATION/dashboard-troubleshooting.md) - Comprehensive dashboard access and troubleshooting
-- [Tailscale Explained](DOCUMENTATION/tailscale-explained.md) - Network connectivity setup
-- [Client Setup Guide](CLIENT-SETUP-GUIDE.md) - Initial OpenClaw configuration for clients
+- [Dashboard Troubleshooting Guide](../troubleshooting/dashboard-troubleshooting.md) - Comprehensive dashboard access and troubleshooting
+- [Tailscale Explained](../networking/tailscale-explained.md) - Network connectivity setup
+- [Client Setup Guide](../clawdbot/CLIENT-SETUP-GUIDE.md) - Initial OpenClaw configuration for clients
 
 ---
 

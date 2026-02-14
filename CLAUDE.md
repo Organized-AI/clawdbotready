@@ -28,19 +28,22 @@ A comprehensive deployment toolkit and documentation hub that makes Clawdbot (AI
 
 ## Project Structure
 
-**Organized by Priority** (Primary focus → Supporting tools → Meta-tooling)
-
 ```
 /
-├── 01-OPENCLAW-DEPLOYMENT/        → PRIMARY: OpenClaw agent deployment
+├── SETUP GUIDES/                  → PRIMARY: Deployment toolkits & setup docs
 │   ├── openclaw-vm-setup/         → VM-isolated deployment toolkit
 │   │   ├── config/                → Configuration templates
 │   │   ├── scripts/               → VM helper utilities
 │   │   └── PLANNING/              → Phase 0-8 implementation plans
-│   └── openclaw-native-setup/     → Native macOS deployment toolkit
-│       ├── config/
-│       ├── scripts/
-│       └── PLANNING/
+│   ├── openclaw-native-setup/     → Native macOS deployment toolkit
+│   │   ├── config/
+│   │   ├── scripts/
+│   │   └── PLANNING/
+│   ├── clawdbot-setup-agent/      → AI-powered phone-based setup assistant
+│   │   ├── config/                → Agent exec-approvals
+│   │   └── scripts/               → SSH manager & remote setup
+│   ├── clawdbot-customer-setup-guide.md  → Customer-facing setup docs
+│   └── clawdbot-deployment-guide.md      → Platform comparison guide
 │
 ├── 02-CLI-TOOLS/                  → SECONDARY: Workflow utilities
 │   └── CLI/                       → Session management & sync tools
@@ -61,11 +64,14 @@ A comprehensive deployment toolkit and documentation hub that makes Clawdbot (AI
 │   └── setup-openclaw-autostart.sh
 │
 ├── DOCUMENTATION/                 → All deployment guides and docs
-│   ├── clawdbot-*.md             → Clawdbot-specific guides
-│   ├── openclaw-*.md             → OpenClaw setup guides
-│   ├── ssh-*.md                  → SSH tunnel documentation
-│   ├── tailscale-*.md            → Tailscale networking guides
-│   └── telegram-*.md             → Telegram bot setup
+│   ├── clawdbot/                 → Clawdbot deployment & operations
+│   ├── openclaw/                 → OpenClaw Gateway setup & config
+│   ├── networking/               → SSH tunnels & Tailscale
+│   ├── messaging/                → Telegram & iMessage bot setup
+│   ├── troubleshooting/          → Fixes, workarounds, diagnostics
+│   ├── client-support/           → Client-facing guides & messages
+│   ├── google-ads/               → Google Ads integration
+│   └── reference/                → Background material & transcripts
 │
 ├── PLANNING/                      → Clawdbot project planning
 │   ├── PROJECT.md                → Vision, goals, success metrics
@@ -267,7 +273,7 @@ Before marking a milestone complete:
 ### Common Commands
 ```bash
 # OpenClaw VM Operations
-cd 01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup
+cd SETUP GUIDES/openclaw-vm-setup
 ./scripts/status.sh        # Check VM status
 ./scripts/connect.sh       # Connect to VM
 ./scripts/tunnel.sh        # Create SSH tunnel to Gateway
@@ -286,10 +292,10 @@ cd 03-ACTIVE-PROJECTS/google-ads-cli
 ```
 
 ### File Locations
-- VM config: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/config/settings.env`
-- Security allowlist: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/config/exec-approvals.json`
-- Logs: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/logs/`
-- Backups: `01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup/backups/`
+- VM config: `SETUP GUIDES/openclaw-vm-setup/config/settings.env`
+- Security allowlist: `SETUP GUIDES/openclaw-vm-setup/config/exec-approvals.json`
+- Logs: `SETUP GUIDES/openclaw-vm-setup/logs/`
+- Backups: `SETUP GUIDES/openclaw-vm-setup/backups/`
 - CLI tools: `02-CLI-TOOLS/CLI/`
 - Active projects: `03-ACTIVE-PROJECTS/`
 

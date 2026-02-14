@@ -877,8 +877,8 @@ Test bot functionality
 ## Related Documentation
 
 - [SSH vs Tailscale Explained](./ssh-vs-tailscale-explained.md) - Understanding the relationship
-- [Dashboard Troubleshooting](./dashboard-troubleshooting.md) - Remote dashboard access
-- [Remote Support Guide](./REMOTE-SUPPORT-GUIDE.md) - Specific customer support procedures
+- [Dashboard Troubleshooting](../troubleshooting/dashboard-troubleshooting.md) - Remote dashboard access
+- [Remote Support Guide](../client-support/REMOTE-SUPPORT-GUIDE.md) - Specific customer support procedures
 - [Tailscale Explained](./tailscale-explained.md) - Deep dive into Tailscale functionality
 
 ---

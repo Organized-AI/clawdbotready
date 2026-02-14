@@ -1,0 +1,164 @@
+{
+  "generated": "2026-02-09T20:21:37.676Z",
+  "period": {
+    "start": "2026-02-03T20:22:00.786Z",
+    "end": "2026-02-09T19:33:36.496Z"
+  },
+  "sessionCount": 15,
+  "messageCount": 184,
+  "intentSummary": {
+    "general-question": 108,
+    "troubleshooting": 13,
+    "reporting": 12,
+    "setup-config": 20,
+    "google-ads-campaigns": 8,
+    "google-ads-performance": 9,
+    "bot-status": 9,
+    "google-ads-management": 5
+  },
+  "toolSummary": {
+    "totalCalls": 212,
+    "uniqueTools": [
+      "message",
+      "write",
+      "browser",
+      "gateway",
+      "exec",
+      "read",
+      "canvas",
+      "memory_search",
+      "process"
+    ],
+    "failureRate": 0.2679425837320574
+  },
+  "painPoints": [
+    {
+      "type": "tool-failure",
+      "description": "browser failed 26 time(s)",
+      "severity": "high",
+      "count": 26
+    },
+    {
+      "type": "repeated-intent",
+      "description": "\"setup-config\" asked 20 times — candidate for automation",
+      "severity": "high",
+      "count": 20
+    },
+    {
+      "type": "tool-failure",
+      "description": "exec failed 14 time(s)",
+      "severity": "high",
+      "count": 14
+    },
+    {
+      "type": "repeated-intent",
+      "description": "\"troubleshooting\" asked 13 times — candidate for automation",
+      "severity": "high",
+      "count": 13
+    },
+    {
+      "type": "repeated-intent",
+      "description": "\"reporting\" asked 12 times — candidate for automation",
+      "severity": "high",
+      "count": 12
+    },
+    {
+      "type": "repeated-intent",
+      "description": "\"google-ads-performance\" asked 9 times — candidate for automation",
+      "severity": "high",
+      "count": 9
+    },
+    {
+      "type": "repeated-intent",
+      "description": "\"bot-status\" asked 9 times — candidate for automation",
+      "severity": "high",
+      "count": 9
+    },
+    {
+      "type": "repeated-intent",
+      "description": "\"google-ads-campaigns\" asked 8 times — candidate for automation",
+      "severity": "high",
+      "count": 8
+    },
+    {
+      "type": "capability-gap",
+      "description": "Agent reported missing capabilities 7 time(s)",
+      "severity": "high",
+      "count": 7
+    },
+    {
+      "type": "tool-failure",
+      "description": "read failed 5 time(s)",
+      "severity": "high",
+      "count": 5
+    },
+    {
+      "type": "repeated-intent",
+      "description": "\"google-ads-management\" asked 5 times — candidate for automation",
+      "severity": "high",
+      "count": 5
+    },
+    {
+      "type": "tool-failure",
+      "description": "gateway failed 4 time(s)",
+      "severity": "high",
+      "count": 4
+    },
+    {
+      "type": "tool-failure",
+      "description": "message failed 3 time(s)",
+      "severity": "high",
+      "count": 3
+    },
+    {
+      "type": "tool-failure",
+      "description": "memory_search failed 3 time(s)",
+      "severity": "high",
+      "count": 3
+    },
+    {
+      "type": "tool-failure",
+      "description": "canvas failed 1 time(s)",
+      "severity": "low",
+      "count": 1
+    }
+  ],
+  "suggestions": [
+    {
+      "type": "skill",
+      "name": "scheduled-reports",
+      "description": "Automated daily/weekly performance summaries sent proactively via Telegram",
+      "priority": "high"
+    },
+    {
+      "type": "cli-tool",
+      "name": "campaign-status",
+      "description": "Quick one-liner to list active campaigns with budget and status",
+      "priority": "medium"
+    },
+    {
+      "type": "skill",
+      "name": "blade-daily-report",
+      "description": "Auto-generate daily Blade campaign performance summary with CPA, spend, and conversion metrics",
+      "priority": "high"
+    },
+    {
+      "type": "agent",
+      "name": "campaign-manager",
+      "description": "Multi-step agent for safe campaign modifications (pause/enable/budget) with confirmation",
+      "priority": "medium"
+    },
+    {
+      "type": "skill",
+      "name": "capability-router",
+      "description": "Smart routing skill that redirects unsupported queries to appropriate tools or suggests alternatives",
+      "priority": "medium"
+    },
+    {
+      "type": "cli-tool",
+      "name": "fix-memory-search",
+      "description": "Diagnose and fix OpenAI API key for memory_search embeddings",
+      "priority": "high"
+    }
+  ]
+}

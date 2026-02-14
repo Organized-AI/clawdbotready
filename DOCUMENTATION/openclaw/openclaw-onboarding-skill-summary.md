@@ -73,15 +73,7 @@ Deep knowledge of both deployment paths:
 - 10GB disk required
 - Development-optimized
 
-### 4. Moltbook Integration
-
-Streamlined setup for centralized agent management:
-- Claim link generation
-- Dashboard configuration
-- Troubleshooting common issues
-- Team collaboration guidance
-
-### 5. Production Hardening
+### 4. Production Hardening
 
 Security validation using:
 - `HARDENING-GUIDE.md` checklist
@@ -105,7 +97,6 @@ Security validation using:
 Triggers automatically when users:
 - Ask about OpenClaw deployment
 - Mention "vm or native"
-- Request Moltbook integration
 - Need deployment troubleshooting
 
 ### Integration with /phased-build
@@ -218,11 +209,6 @@ else:
    - Adds safety checks to standard workflow
    - Enhances reliability
 
-3. **Moltbook**
-   - Knows integration workflow (`scripts/moltbook-setup.sh`)
-   - Troubleshoots claim link issues
-   - Guides dashboard setup
-
 ### Future Enhancements
 
 Potential additions:
@@ -249,7 +235,6 @@ Potential additions:
 ✅ Decision tree logic
 ✅ Phase execution workflows
 ✅ Troubleshooting guides
-✅ Moltbook integration
 ✅ Production hardening
 
 ## Success Metrics

@@ -1,0 +1,25 @@
+{
+  "name": "meta-ads-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for Meta/Facebook Marketing API — built for OpenClaw Gateway",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "meta-ads-cli": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

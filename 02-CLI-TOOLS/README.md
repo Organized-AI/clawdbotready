@@ -60,7 +60,7 @@ These tools are **not specific to OpenClaw deployment**. They provide general wo
 - Searching through past session conversations
 - Archiving session artifacts
 
-For OpenClaw-specific tools, see [`../01-OPENCLAW-DEPLOYMENT/`](../01-OPENCLAW-DEPLOYMENT/).
+For OpenClaw-specific tools, see [`../SETUP GUIDES/`](../SETUP%20GUIDES/).
 
 ---
 

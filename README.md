@@ -12,7 +12,7 @@ This repository supports **two macOS deployment approaches** for Clawdbot on App
 - ✅ Easy snapshot/rollback
 - ✅ Defense-in-depth security hardening
 - ✅ iMessage support
-- 📁 Setup: [`openclaw-vm-setup/`](openclaw-vm-setup/) toolkit
+- 📁 Setup: [`SETUP GUIDES/openclaw-vm-setup/`](SETUP%20GUIDES/openclaw-vm-setup/) toolkit
 - 📖 Guide: [VM Security Hardening](openclaw-macos-vm-security-hardening-guide.md)
 
 **Best for**: Multi-tenant deployments, production environments, maximum isolation
@@ -99,14 +99,14 @@ For teams managing Clawdbot deployments, the [Team Operations Guide](clawdbot-te
 ## Quick Start
 
 ### For VM-Isolated Deployment (Recommended)
-1. Navigate to deployment toolkit: `cd 01-OPENCLAW-DEPLOYMENT/openclaw-vm-setup`
+1. Navigate to deployment toolkit: `cd "SETUP GUIDES/openclaw-vm-setup"`
 2. Review the [VM Security Hardening Guide](DOCUMENTATION/openclaw-macos-vm-security-hardening-guide.md)
 3. Run the automated setup: `./setup.sh`
 4. Follow the [Customer Setup Guide](clawdbot-customer-setup-guide.md) for Gateway configuration
 5. For teams, review the [Team Operations Guide](clawdbot-team-operations-guide.md)
 
 ### For Native macOS Deployment
-1. Navigate to deployment toolkit: `cd 01-OPENCLAW-DEPLOYMENT/openclaw-native-setup`
+1. Navigate to deployment toolkit: `cd "SETUP GUIDES/openclaw-native-setup"`
 2. Review the [Native macOS Lockdown Guide](DOCUMENTATION/openclaw-native-macos-lockdown-guide.md)
 3. Follow security hardening steps
 4. Install Gateway directly on host

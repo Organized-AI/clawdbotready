@@ -137,8 +137,8 @@ openclaw channels status
 
 ## Documentation Created
 
-1. **[TELEGRAM-BOT-SETUP-GUIDE.md](../TELEGRAM-BOT-SETUP-GUIDE.md)** - Complete setup guide
-2. **[openclaw-onboarding skill v2.3.0](../.claude/skills/openclaw-onboarding/skill.md)** - Updated with Lesson 6 on OpenRouter
+1. **[TELEGRAM-BOT-SETUP-GUIDE.md](./TELEGRAM-BOT-SETUP-GUIDE.md)** - Complete setup guide
+2. **[openclaw-onboarding skill v2.3.0](../../.claude/skills/openclaw-onboarding/skill.md)** - Updated with Lesson 6 on OpenRouter
 3. **This summary** - Quick reference for future deployments
 
 ## Lessons for Agent Skill
@@ -156,7 +156,7 @@ The following was added as **Lesson 6** to the openclaw-onboarding skill:
 2. Use correct model format from the start
 3. Add API key to LaunchAgent immediately
 4. Verify with `openclaw models status` before testing
-5. Reference [TELEGRAM-BOT-SETUP-GUIDE.md](../TELEGRAM-BOT-SETUP-GUIDE.md) for complete steps
+5. Reference [TELEGRAM-BOT-SETUP-GUIDE.md](./TELEGRAM-BOT-SETUP-GUIDE.md) for complete steps
 
 ---
 

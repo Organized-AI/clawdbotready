@@ -971,8 +971,8 @@ Fly.io is a Platform-as-a-Service that runs your Docker containers globally:
 
 ## See Also
 
-- [SSH Tunnel Explained](./ssh-tunnel-explained.md) - Deep dive into SSH tunneling
-- [Tailscale Explained](./tailscale-explained.md) - Understanding mesh VPNs
+- [SSH Tunnel Explained](../networking/ssh-tunnel-explained.md) - Deep dive into SSH tunneling
+- [Tailscale Explained](../networking/tailscale-explained.md) - Understanding mesh VPNs
 
 ---
 

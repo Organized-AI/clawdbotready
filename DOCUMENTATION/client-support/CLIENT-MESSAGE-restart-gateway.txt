@@ -1,0 +1,19 @@
+Hey! Can you help restart the OpenClaw Gateway? Just copy/paste these commands into Terminal:
+
+# Stop the gateway
+launchctl stop com.openclaw.gateway
+
+# Wait a moment
+sleep 3
+
+# Start it again
+launchctl start com.openclaw.gateway
+
+# Check if it's running
+ps aux | grep openclaw-gateway | grep -v grep
+
+If you see output from that last command, the gateway is running! ✅
+
+Then test your Telegram bot - it should work now.
+
+Let me know if you get any errors!

@@ -30,7 +30,7 @@ The gateway uses Telegram's "getUpdates" API to check for new messages every few
 | **Network Issue** | Intermittent responses | Mac Mini network/internet problem |
 | **Mac Asleep** | Can't reach bot remotely | Power settings allow sleep |
 
-**⚠️ NEW: If you see EMFILE errors**, see the dedicated guide: [EMFILE Troubleshooting](./OPENCLAW-EMFILE-TROUBLESHOOTING.md)
+**⚠️ NEW: If you see EMFILE errors**, see the dedicated guide: [EMFILE Troubleshooting](../troubleshooting/OPENCLAW-EMFILE-TROUBLESHOOTING.md)
 
 ---
 
@@ -310,7 +310,7 @@ ssh openclaw@100.66.145.48 "launchctl stop ai.openclaw.gateway && sleep 3 && lau
 
 **Permanent Fix:**
 
-See the comprehensive guide: **[EMFILE Troubleshooting Guide](./OPENCLAW-EMFILE-TROUBLESHOOTING.md)**
+See the comprehensive guide: **[EMFILE Troubleshooting Guide](../troubleshooting/OPENCLAW-EMFILE-TROUBLESHOOTING.md)**
 
 The fix involves updating the LaunchAgent plist to increase file descriptor limits from 256 to 65,536.
 

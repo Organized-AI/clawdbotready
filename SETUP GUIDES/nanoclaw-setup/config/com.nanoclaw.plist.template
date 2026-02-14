@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  NanoClaw launchd Service Template
+
+  Placeholders (replaced by install-service.sh):
+    {{NODE_PATH}}     — Path to node binary (e.g., /opt/homebrew/bin/node)
+    {{PROJECT_ROOT}}  — Absolute path to nanoclaw clone
+    {{HOME}}          — User home directory
+    {{ASSISTANT_NAME}} — Trigger word (default: Andy)
+-->
+<dict>
+    <key>Label</key>
+    <string>com.nanoclaw</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{NODE_PATH}}</string>
+        <string>{{PROJECT_ROOT}}/dist/index.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{PROJECT_ROOT}}</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <key>ASSISTANT_NAME</key>
+        <string>{{ASSISTANT_NAME}}</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{PROJECT_ROOT}}/logs/nanoclaw.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{PROJECT_ROOT}}/logs/nanoclaw.error.log</string>
+
+    <!-- Restart after crash with 10s delay -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

@@ -313,8 +313,8 @@ Your customer guides already document these platforms well:
 ## Files Created/Updated
 
 ### New Files
-- ✅ [PLANNING/INTEGRATION-ANALYSIS.md](./INTEGRATION-ANALYSIS.md) - Detailed technical analysis
-- ✅ [PLANNING/INTEGRATION-SUMMARY.md](./INTEGRATION-SUMMARY.md) - This executive summary
+- ✅ [INTEGRATION-ANALYSIS.md](./INTEGRATION-ANALYSIS.md) - Detailed technical analysis
+- ✅ [INTEGRATION-SUMMARY.md](./INTEGRATION-SUMMARY.md) - This executive summary
 
 ### Updated Files
 - ✅ [PLANNING/STATE.md](./STATE.md) - Added integration analysis decision

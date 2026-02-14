@@ -1,0 +1,39 @@
+{
+  "allowedRoots": [
+    {
+      "path": "~/projects",
+      "allowReadWrite": true,
+      "description": "Development projects — agents can read and write files here"
+    },
+    {
+      "path": "~/repos",
+      "allowReadWrite": true,
+      "description": "Git repositories"
+    },
+    {
+      "path": "~/Documents/work",
+      "allowReadWrite": false,
+      "description": "Work documents — read-only access for agents"
+    }
+  ],
+  "blockedPatterns": [
+    ".ssh",
+    ".gnupg",
+    ".aws",
+    ".azure",
+    ".gcloud",
+    ".kube",
+    ".docker",
+    "credentials",
+    ".env",
+    ".netrc",
+    ".npmrc",
+    "id_rsa",
+    "id_ed25519",
+    "private_key",
+    ".secret",
+    "password",
+    "token"
+  ],
+  "nonMainReadOnly": true
+}

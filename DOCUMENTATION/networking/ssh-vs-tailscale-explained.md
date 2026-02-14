@@ -449,8 +449,8 @@ tailscale file cp file.txt mac-mini:
 
 - [Tailscale Explained](./tailscale-explained.md) - Deep dive into Tailscale mesh networking
 - [SSH Tunnels Explained](./ssh-tunnels-explained.md) - Understanding SSH port forwarding
-- [Dashboard Troubleshooting](./dashboard-troubleshooting.md) - Fixing dashboard connection issues
-- [Remote Support Guide](../REMOTE-SUPPORT-GUIDE.md) - Complete Mac Mini management reference
+- [Dashboard Troubleshooting](../troubleshooting/dashboard-troubleshooting.md) - Fixing dashboard connection issues
+- [Remote Support Guide](../client-support/REMOTE-SUPPORT-GUIDE.md) - Complete Mac Mini management reference
 
 ---
 
