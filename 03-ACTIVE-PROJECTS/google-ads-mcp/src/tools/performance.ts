@@ -91,7 +91,7 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
       metrics.conversions,
       metrics.ctr,
       metrics.average_cpc,
-      metrics.conversion_rate,
+      metrics.conversions_from_interactions_rate,
       metrics.cost_per_conversion,
       metrics.search_impression_share,
       metrics.search_budget_lost_impression_share,
@@ -116,7 +116,7 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
         ctr: row.metrics?.ctr || 0,
         avgCpc: row.metrics?.average_cpc ? 
           parseInt(row.metrics.average_cpc) / 1_000_000 : 0,
-        conversionRate: row.metrics?.conversion_rate || 0,
+        conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: row.metrics?.cost_per_conversion ? 
           parseInt(row.metrics.cost_per_conversion) / 1_000_000 : 0,
         impressionShare: row.metrics?.search_impression_share || 0,
@@ -140,7 +140,7 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
         ctr: summary.metrics?.ctr || 0,
         avgCpc: summary.metrics?.average_cpc ? 
           parseInt(summary.metrics.average_cpc) / 1_000_000 : 0,
-        conversionRate: summary.metrics?.conversion_rate || 0,
+        conversionRate: summary.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: summary.metrics?.cost_per_conversion ? 
           parseInt(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
         impressionShare: summary.metrics?.search_impression_share || 0,
@@ -170,7 +170,7 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
       metrics.conversions_value,
       metrics.ctr,
       metrics.average_cpc,
-      metrics.conversion_rate,
+      metrics.conversions_from_interactions_rate,
       metrics.cost_per_conversion,
       metrics.value_per_conversion,
       metrics.search_impression_share,
@@ -203,7 +203,7 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
           ctr: row.metrics?.ctr || 0,
           avgCpc: row.metrics?.average_cpc ? 
             parseInt(row.metrics.average_cpc) / 1_000_000 : 0,
-          conversionRate: row.metrics?.conversion_rate || 0,
+          conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
           costPerConversion: row.metrics?.cost_per_conversion ? 
             parseInt(row.metrics.cost_per_conversion) / 1_000_000 : 0,
           valuePerConversion: row.metrics?.value_per_conversion || 0,
@@ -229,7 +229,7 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
         ctr: summary.metrics?.ctr || 0,
         avgCpc: summary.metrics?.average_cpc ? 
           parseInt(summary.metrics.average_cpc) / 1_000_000 : 0,
-        conversionRate: summary.metrics?.conversion_rate || 0,
+        conversionRate: summary.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: summary.metrics?.cost_per_conversion ? 
           parseInt(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
         valuePerConversion: summary.metrics?.value_per_conversion || 0,
@@ -269,7 +269,7 @@ export async function getAdGroupPerformance(params: z.infer<typeof getAdGroupPer
       metrics.conversions,
       metrics.ctr,
       metrics.average_cpc,
-      metrics.conversion_rate,
+      metrics.conversions_from_interactions_rate,
       metrics.cost_per_conversion
     FROM ad_group
     ${whereClause}
@@ -296,7 +296,7 @@ export async function getAdGroupPerformance(params: z.infer<typeof getAdGroupPer
       ctr: adGroup.metrics?.ctr || 0,
       avgCpc: adGroup.metrics?.average_cpc ? 
         parseInt(adGroup.metrics.average_cpc) / 1_000_000 : 0,
-      conversionRate: adGroup.metrics?.conversion_rate || 0,
+      conversionRate: adGroup.metrics?.conversions_from_interactions_rate || 0,
       costPerConversion: adGroup.metrics?.cost_per_conversion ? 
         parseInt(adGroup.metrics.cost_per_conversion) / 1_000_000 : 0,
     }
@@ -338,7 +338,7 @@ export async function getSearchTermsReport(params: z.infer<typeof getSearchTerms
       metrics.conversions,
       metrics.ctr,
       metrics.average_cpc,
-      metrics.conversion_rate
+      metrics.conversions_from_interactions_rate
     FROM search_term_view
     ${whereClause}
     ORDER BY metrics.impressions DESC
@@ -367,7 +367,7 @@ export async function getSearchTermsReport(params: z.infer<typeof getSearchTerms
       ctr: term.metrics?.ctr || 0,
       avgCpc: term.metrics?.average_cpc ? 
         parseInt(term.metrics.average_cpc) / 1_000_000 : 0,
-      conversionRate: term.metrics?.conversion_rate || 0,
+      conversionRate: term.metrics?.conversions_from_interactions_rate || 0,
     }
   }));
 }

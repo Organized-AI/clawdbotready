@@ -229,7 +229,7 @@ export async function getKeywordPerformance(params: z.infer<typeof getKeywordPer
       metrics.conversions,
       metrics.ctr,
       metrics.average_cpc,
-      metrics.conversion_rate,
+      metrics.conversions_from_interactions_rate,
       metrics.cost_per_conversion,
       metrics.search_impression_share,
       metrics.search_rank_lost_impression_share,
@@ -266,7 +266,7 @@ export async function getKeywordPerformance(params: z.infer<typeof getKeywordPer
       ctr: keyword.metrics?.ctr || 0,
       avgCpc: keyword.metrics?.average_cpc ? 
         parseInt(keyword.metrics.average_cpc) / 1_000_000 : 0,
-      conversionRate: keyword.metrics?.conversion_rate || 0,
+      conversionRate: keyword.metrics?.conversions_from_interactions_rate || 0,
       costPerConversion: keyword.metrics?.cost_per_conversion ? 
         parseInt(keyword.metrics.cost_per_conversion) / 1_000_000 : 0,
       impressionShare: keyword.metrics?.search_impression_share || 0,

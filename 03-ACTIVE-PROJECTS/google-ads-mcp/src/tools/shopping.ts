@@ -79,7 +79,7 @@ export async function getProductPerformance(args: z.infer<typeof getProductPerfo
         metrics.conversions_value,
         metrics.ctr,
         metrics.average_cpc,
-        metrics.conversion_rate,
+        metrics.conversions_from_interactions_rate,
         metrics.cost_per_conversion,
         metrics.value_per_conversion
       FROM shopping_performance_view
@@ -141,7 +141,7 @@ export async function getProductPerformance(args: z.infer<typeof getProductPerfo
         revenue: microsToNumber(row.metrics?.conversions_value) || 0,
         ctr: row.metrics?.ctr || 0,
         averageCpc: microsToNumber(row.metrics?.average_cpc) || 0,
-        conversionRate: row.metrics?.conversion_rate || 0,
+        conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: microsToNumber(row.metrics?.cost_per_conversion) || 0,
         valuePerConversion: microsToNumber(row.metrics?.value_per_conversion) || 0,
         roas: row.metrics?.conversions_value && row.metrics?.cost_micros 
@@ -180,7 +180,7 @@ export async function getProductPartitionPerformance(args: z.infer<typeof getPro
         metrics.conversions_value,
         metrics.ctr,
         metrics.average_cpc,
-        metrics.conversion_rate
+        metrics.conversions_from_interactions_rate
       FROM ad_group_criterion
       WHERE ad_group.id = ${args.adGroupId}
         AND ad_group_criterion.type = 'LISTING_GROUP'
@@ -207,7 +207,7 @@ export async function getProductPartitionPerformance(args: z.infer<typeof getPro
         revenue: microsToNumber(row.metrics?.conversions_value) || 0,
         ctr: row.metrics?.ctr || 0,
         averageCpc: microsToNumber(row.metrics?.average_cpc) || 0,
-        conversionRate: row.metrics?.conversion_rate || 0,
+        conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
         roas: row.metrics?.conversions_value && row.metrics?.cost_micros 
           ? (Number(row.metrics.conversions_value) / Number(row.metrics.cost_micros)) 
           : 0,
@@ -249,7 +249,7 @@ export async function getTopBottomProducts(args: z.infer<typeof getTopBottomProd
         selectField = 'ctr';
         break;
       case 'CONVERSION_RATE':
-        orderByField = 'metrics.conversion_rate';
+        orderByField = 'metrics.conversions_from_interactions_rate';
         selectField = 'conversionRate';
         break;
     }
@@ -266,7 +266,7 @@ export async function getTopBottomProducts(args: z.infer<typeof getTopBottomProd
         metrics.conversions,
         metrics.conversions_value,
         metrics.ctr,
-        metrics.conversion_rate
+        metrics.conversions_from_interactions_rate
       FROM shopping_performance_view
     `;
     
@@ -296,7 +296,7 @@ export async function getTopBottomProducts(args: z.infer<typeof getTopBottomProd
         conversions: row.metrics?.conversions || 0,
         revenue: microsToNumber(row.metrics?.conversions_value) || 0,
         ctr: row.metrics?.ctr || 0,
-        conversionRate: row.metrics?.conversion_rate || 0,
+        conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
         roas: row.metrics?.conversions_value && row.metrics?.cost_micros 
           ? (Number(row.metrics.conversions_value) / Number(row.metrics.cost_micros)) 
           : 0,

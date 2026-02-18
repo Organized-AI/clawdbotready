@@ -71,7 +71,7 @@ export async function getTopBottomKeywords(args: z.infer<typeof getTopBottomKeyw
         selectField = 'ctr';
         break;
       case 'CONVERSION_RATE':
-        orderByField = 'metrics.conversion_rate';
+        orderByField = 'metrics.conversions_from_interactions_rate';
         selectField = 'conversionRate';
         break;
       case 'CPC':
@@ -100,7 +100,7 @@ export async function getTopBottomKeywords(args: z.infer<typeof getTopBottomKeyw
         metrics.conversions_value,
         metrics.ctr,
         metrics.average_cpc,
-        metrics.conversion_rate,
+        metrics.conversions_from_interactions_rate,
         metrics.cost_per_conversion
       FROM keyword_view
     `;
@@ -152,7 +152,7 @@ export async function getTopBottomKeywords(args: z.infer<typeof getTopBottomKeyw
         conversionsValue: microsToNumber(row.metrics?.conversions_value) || 0,
         ctr: row.metrics?.ctr || 0,
         averageCpc: microsToNumber(row.metrics?.average_cpc) || 0,
-        conversionRate: row.metrics?.conversion_rate || 0,
+        conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: microsToNumber(row.metrics?.cost_per_conversion) || 0,
       }
     });
@@ -187,13 +187,13 @@ export async function getKeywordOpportunities(args: z.infer<typeof getKeywordOpp
         metrics.conversions,
         metrics.conversions_value,
         metrics.ctr,
-        metrics.conversion_rate,
+        metrics.conversions_from_interactions_rate,
         metrics.cost_per_conversion
       FROM search_term_view
       WHERE search_term_view.status = 'NONE'
         AND metrics.impressions >= ${args.minImpressions}
         ${args.maxCostPerConversion ? `AND metrics.cost_per_conversion <= ${args.maxCostPerConversion * 1_000_000}` : ''}
-        ${args.minConversionRate ? `AND metrics.conversion_rate >= ${args.minConversionRate}` : ''}
+        ${args.minConversionRate ? `AND metrics.conversions_from_interactions_rate >= ${args.minConversionRate}` : ''}
       ${dateRangeClause}
       ORDER BY metrics.conversions DESC
       LIMIT 50
@@ -214,7 +214,7 @@ export async function getKeywordOpportunities(args: z.infer<typeof getKeywordOpp
         metrics.cost_micros,
         metrics.conversions,
         metrics.ctr,
-        metrics.conversion_rate,
+        metrics.conversions_from_interactions_rate,
         metrics.cost_per_conversion
       FROM keyword_view
       WHERE ad_group_criterion.status = 'ENABLED'
@@ -243,7 +243,7 @@ export async function getKeywordOpportunities(args: z.infer<typeof getKeywordOpp
           conversions: row.metrics?.conversions || 0,
           revenue: microsToNumber(row.metrics?.conversions_value) || 0,
           ctr: row.metrics?.ctr || 0,
-          conversionRate: row.metrics?.conversion_rate || 0,
+          conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
           costPerConversion: microsToNumber(row.metrics?.cost_per_conversion) || 0,
         },
         recommendation: 'Add as keyword - high performance search term',
@@ -288,7 +288,7 @@ export async function getCampaignComparison(args: z.infer<typeof getCampaignComp
         metrics.conversions,
         metrics.conversions_value,
         metrics.ctr,
-        metrics.conversion_rate,
+        metrics.conversions_from_interactions_rate,
         metrics.cost_per_conversion,
         metrics.search_impression_share,
         metrics.search_rank_lost_impression_share,
@@ -320,7 +320,7 @@ export async function getCampaignComparison(args: z.infer<typeof getCampaignComp
           conversions,
           revenue,
           ctr: row.metrics?.ctr || 0,
-          conversionRate: row.metrics?.conversion_rate || 0,
+          conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
           cpa: conversions > 0 ? cost / conversions : 0,
           roas: cost > 0 ? revenue / cost : 0,
           searchImpressionShare: row.metrics?.search_impression_share || 0,

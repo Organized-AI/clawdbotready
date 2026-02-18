@@ -80,7 +80,7 @@ export async function listCampaigns(params: z.infer<typeof listCampaignsSchema>)
       metrics.conversions,
       metrics.ctr,
       metrics.average_cpc,
-      metrics.conversion_rate,
+      metrics.conversions_from_interactions_rate,
       metrics.cost_per_conversion
     FROM campaign
     ${whereClause}
@@ -135,7 +135,7 @@ export async function getCampaign(params: z.infer<typeof getCampaignSchema>) {
       metrics.conversions,
       metrics.ctr,
       metrics.average_cpc,
-      metrics.conversion_rate
+      metrics.conversions_from_interactions_rate
     FROM campaign
     WHERE campaign.id = ${params.campaignId}
   `;
