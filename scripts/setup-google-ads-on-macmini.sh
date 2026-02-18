@@ -63,7 +63,7 @@ if command -v google-ads-cli &> /dev/null; then
     echo "Testing connection to Google Ads API..."
     echo ""
 
-    if google-ads-cli campaigns --limit 1 2>&1; then
+    if google-ads-cli list-campaigns --limit 1 2>&1; then
         echo ""
         echo "╔════════════════════════════════════════════════════════╗"
         echo "║              🎉 SUCCESS! 🎉                            ║"
@@ -73,9 +73,9 @@ if command -v google-ads-cli &> /dev/null; then
         echo "✅ CLI is properly configured"
         echo ""
         echo "You can now use commands like:"
-        echo "  • google-ads-cli campaigns"
-        echo "  • google-ads-cli cpa"
-        echo "  • google-ads-cli report"
+        echo "  • google-ads-cli list-campaigns"
+        echo "  • google-ads-cli get-account-performance"
+        echo "  • google-ads-cli get-campaign-comparison"
         echo ""
     else
         echo ""

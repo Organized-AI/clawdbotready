@@ -100,7 +100,7 @@ if ssh "${MAC_MINI_USER}@${MAC_MINI_IP}" "command -v google-ads-cli" > /dev/null
 
     echo ""
     echo "Testing API connection (listing campaigns)..."
-    ssh "${MAC_MINI_USER}@${MAC_MINI_IP}" "google-ads-cli campaigns --limit 1" || {
+    ssh "${MAC_MINI_USER}@${MAC_MINI_IP}" "google-ads-cli list-campaigns --limit 1" || {
         echo ""
         echo "⚠️  API call failed. This could be:"
         echo "   - Developer token not approved yet"
@@ -122,7 +122,7 @@ echo "  - ~/.google-ads-cli/config.json (for CLI)"
 echo "  - ~/.google-ads/google-ads.yaml (for standard library)"
 echo ""
 echo "Next steps:"
-echo "  1. Test the CLI: ssh ${MAC_MINI_USER}@${MAC_MINI_IP} 'google-ads-cli campaigns'"
+echo "  1. Test the CLI: ssh ${MAC_MINI_USER}@${MAC_MINI_IP} 'google-ads-cli list-campaigns'"
 echo "  2. Check OpenClaw Gateway integration"
 echo "  3. Set up monitoring"
 echo ""

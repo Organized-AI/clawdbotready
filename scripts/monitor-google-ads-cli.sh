@@ -81,12 +81,12 @@ if [ "${1:-}" = "--local" ]; then
 
     # Test API connection
     log "Testing Google Ads API connection..."
-    if ssh "${MAC_MINI_USER}@${MAC_MINI_IP}" "google-ads-cli campaigns --limit 1" > /dev/null 2>&1; then
+    if ssh "${MAC_MINI_USER}@${MAC_MINI_IP}" "google-ads-cli list-campaigns --limit 1" > /dev/null 2>&1; then
         log "✅ Google Ads API connection successful"
         send_alert "✅ Google Ads CLI is healthy and responding" "info"
         exit 0
     else
-        error_output=$(ssh "${MAC_MINI_USER}@${MAC_MINI_IP}" "google-ads-cli campaigns --limit 1 2>&1" || true)
+        error_output=$(ssh "${MAC_MINI_USER}@${MAC_MINI_IP}" "google-ads-cli list-campaigns --limit 1 2>&1" || true)
         send_alert "❌ Google Ads API connection failed\n\nError: ${error_output:0:200}" "error"
         exit 1
     fi
@@ -106,7 +106,7 @@ else
 
     # Test API connection
     log "Testing Google Ads API connection..."
-    if output=$(google-ads-cli campaigns --limit 1 2>&1); then
+    if output=$(google-ads-cli list-campaigns --limit 1 2>&1); then
         log "✅ Google Ads API connection successful"
 
         # Extract campaign count if available

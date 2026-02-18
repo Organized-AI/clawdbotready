@@ -50,7 +50,7 @@ On the Mac Mini, run these commands:
    chmod 600 ~/.google-ads/google-ads.yaml
 
 4. Test the CLI:
-   google-ads-cli campaigns --limit 1
+   google-ads-cli list-campaigns --limit 1
 
 If the test works, the credentials are properly installed!
 EOF
