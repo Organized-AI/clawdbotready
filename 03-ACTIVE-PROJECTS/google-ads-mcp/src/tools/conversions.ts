@@ -75,7 +75,6 @@ export async function listConversionActions(args: z.infer<typeof listConversionA
         conversion_action.type,
         conversion_action.status,
         conversion_action.counting_type,
-        conversion_action.attribution_model,
         conversion_action.click_through_lookback_window_days,
         conversion_action.view_through_lookback_window_days,
         conversion_action.value_settings.default_value,
@@ -99,7 +98,6 @@ export async function listConversionActions(args: z.infer<typeof listConversionA
       type: row.conversion_action?.type,
       status: row.conversion_action?.status,
       countingType: row.conversion_action?.counting_type,
-      attributionModel: row.conversion_action?.attribution_model,
       clickThroughLookbackWindowDays: row.conversion_action?.click_through_lookback_window_days,
       viewThroughLookbackWindowDays: row.conversion_action?.view_through_lookback_window_days,
       valueSettings: {
