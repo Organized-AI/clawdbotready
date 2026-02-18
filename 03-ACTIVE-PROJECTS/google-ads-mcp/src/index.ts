@@ -132,11 +132,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const parsedArgs = tool.schema.parse(args);
     const result = await tool.handler(parsedArgs);
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof McpError) {
       throw error;
     }
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    // Google Ads API errors have .errors array with detailed info
+    let errorMessage = 'Unknown error occurred';
+    if (error?.errors?.length > 0) {
+      errorMessage = error.errors.map((e: any) => {
+        const code = e.error_code ? JSON.stringify(e.error_code) : '';
+        const path = e.location?.field_path_elements?.map((p: any) => p.field_name).join('.') || '';
+        return `${e.message}${code ? ` (${code})` : ''}${path ? ` at ${path}` : ''}`;
+      }).join('; ');
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
     throw new McpError(ErrorCode.InternalError, `Tool execution failed: ${errorMessage}`);
   }
 });

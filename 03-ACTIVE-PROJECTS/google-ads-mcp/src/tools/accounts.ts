@@ -139,7 +139,7 @@ export async function listManagerAccounts(args: z.infer<typeof listManagerAccoun
     
     return response.map(row => ({
       managerCustomer: row.customer_manager_link?.manager_customer,
-      clientCustomer: row.customer_manager_link?.client_customer,
+      clientCustomer: (row.customer_manager_link as any)?.client_customer,
       status: row.customer_manager_link?.status
     }));
   } catch (error) {

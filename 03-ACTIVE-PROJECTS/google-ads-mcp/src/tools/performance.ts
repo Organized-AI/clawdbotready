@@ -111,14 +111,14 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
         impressions: row.metrics?.impressions || 0,
         clicks: row.metrics?.clicks || 0,
         cost: row.metrics?.cost_micros ? 
-          parseInt(row.metrics.cost_micros) / 1_000_000 : 0,
+          Number(row.metrics.cost_micros) / 1_000_000 : 0,
         conversions: row.metrics?.conversions || 0,
         ctr: row.metrics?.ctr || 0,
         avgCpc: row.metrics?.average_cpc ? 
-          parseInt(row.metrics.average_cpc) / 1_000_000 : 0,
+          Number(row.metrics.average_cpc) / 1_000_000 : 0,
         conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: row.metrics?.cost_per_conversion ? 
-          parseInt(row.metrics.cost_per_conversion) / 1_000_000 : 0,
+          Number(row.metrics.cost_per_conversion) / 1_000_000 : 0,
         impressionShare: row.metrics?.search_impression_share || 0,
         budgetLostImpressionShare: row.metrics?.search_budget_lost_impression_share || 0,
         rankLostImpressionShare: row.metrics?.search_rank_lost_impression_share || 0,
@@ -135,14 +135,14 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
         impressions: summary.metrics?.impressions || 0,
         clicks: summary.metrics?.clicks || 0,
         cost: summary.metrics?.cost_micros ? 
-          parseInt(summary.metrics.cost_micros) / 1_000_000 : 0,
+          Number(summary.metrics.cost_micros) / 1_000_000 : 0,
         conversions: summary.metrics?.conversions || 0,
         ctr: summary.metrics?.ctr || 0,
         avgCpc: summary.metrics?.average_cpc ? 
-          parseInt(summary.metrics.average_cpc) / 1_000_000 : 0,
+          Number(summary.metrics.average_cpc) / 1_000_000 : 0,
         conversionRate: summary.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: summary.metrics?.cost_per_conversion ? 
-          parseInt(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
+          Number(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
         impressionShare: summary.metrics?.search_impression_share || 0,
         budgetLostImpressionShare: summary.metrics?.search_budget_lost_impression_share || 0,
         rankLostImpressionShare: summary.metrics?.search_rank_lost_impression_share || 0,
@@ -197,15 +197,15 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
           impressions: row.metrics?.impressions || 0,
           clicks: row.metrics?.clicks || 0,
           cost: row.metrics?.cost_micros ? 
-            parseInt(row.metrics.cost_micros) / 1_000_000 : 0,
+            Number(row.metrics.cost_micros) / 1_000_000 : 0,
           conversions: row.metrics?.conversions || 0,
           conversionsValue: row.metrics?.conversions_value || 0,
           ctr: row.metrics?.ctr || 0,
           avgCpc: row.metrics?.average_cpc ? 
-            parseInt(row.metrics.average_cpc) / 1_000_000 : 0,
+            Number(row.metrics.average_cpc) / 1_000_000 : 0,
           conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
           costPerConversion: row.metrics?.cost_per_conversion ? 
-            parseInt(row.metrics.cost_per_conversion) / 1_000_000 : 0,
+            Number(row.metrics.cost_per_conversion) / 1_000_000 : 0,
           valuePerConversion: row.metrics?.value_per_conversion || 0,
           impressionShare: row.metrics?.search_impression_share || 0,
           invalidClicks: row.metrics?.invalid_clicks || 0,
@@ -223,15 +223,15 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
         impressions: summary.metrics?.impressions || 0,
         clicks: summary.metrics?.clicks || 0,
         cost: summary.metrics?.cost_micros ? 
-          parseInt(summary.metrics.cost_micros) / 1_000_000 : 0,
+          Number(summary.metrics.cost_micros) / 1_000_000 : 0,
         conversions: summary.metrics?.conversions || 0,
         conversionsValue: summary.metrics?.conversions_value || 0,
         ctr: summary.metrics?.ctr || 0,
         avgCpc: summary.metrics?.average_cpc ? 
-          parseInt(summary.metrics.average_cpc) / 1_000_000 : 0,
+          Number(summary.metrics.average_cpc) / 1_000_000 : 0,
         conversionRate: summary.metrics?.conversions_from_interactions_rate || 0,
         costPerConversion: summary.metrics?.cost_per_conversion ? 
-          parseInt(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
+          Number(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
         valuePerConversion: summary.metrics?.value_per_conversion || 0,
         impressionShare: summary.metrics?.search_impression_share || 0,
         budgetLostImpressionShare: summary.metrics?.search_budget_lost_impression_share || 0,
@@ -291,14 +291,14 @@ export async function getAdGroupPerformance(params: z.infer<typeof getAdGroupPer
       impressions: adGroup.metrics?.impressions || 0,
       clicks: adGroup.metrics?.clicks || 0,
       cost: adGroup.metrics?.cost_micros ? 
-        parseInt(adGroup.metrics.cost_micros) / 1_000_000 : 0,
+        Number(adGroup.metrics.cost_micros) / 1_000_000 : 0,
       conversions: adGroup.metrics?.conversions || 0,
       ctr: adGroup.metrics?.ctr || 0,
       avgCpc: adGroup.metrics?.average_cpc ? 
-        parseInt(adGroup.metrics.average_cpc) / 1_000_000 : 0,
+        Number(adGroup.metrics.average_cpc) / 1_000_000 : 0,
       conversionRate: adGroup.metrics?.conversions_from_interactions_rate || 0,
       costPerConversion: adGroup.metrics?.cost_per_conversion ? 
-        parseInt(adGroup.metrics.cost_per_conversion) / 1_000_000 : 0,
+        Number(adGroup.metrics.cost_per_conversion) / 1_000_000 : 0,
     }
   }));
 }
@@ -362,11 +362,11 @@ export async function getSearchTermsReport(params: z.infer<typeof getSearchTerms
       impressions: term.metrics?.impressions || 0,
       clicks: term.metrics?.clicks || 0,
       cost: term.metrics?.cost_micros ? 
-        parseInt(term.metrics.cost_micros) / 1_000_000 : 0,
+        Number(term.metrics.cost_micros) / 1_000_000 : 0,
       conversions: term.metrics?.conversions || 0,
       ctr: term.metrics?.ctr || 0,
       avgCpc: term.metrics?.average_cpc ? 
-        parseInt(term.metrics.average_cpc) / 1_000_000 : 0,
+        Number(term.metrics.average_cpc) / 1_000_000 : 0,
       conversionRate: term.metrics?.conversions_from_interactions_rate || 0,
     }
   }));

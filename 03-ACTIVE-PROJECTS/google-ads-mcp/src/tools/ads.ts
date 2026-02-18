@@ -36,11 +36,11 @@ export const getAdPerformanceSchema = z.object({
   adId: z.string(),
   adGroupId: z.string(),
   dateRange: z.enum([
-    'TODAY', 
-    'YESTERDAY', 
-    'LAST_7_DAYS', 
-    'LAST_30_DAYS', 
-    'THIS_MONTH', 
+    'TODAY',
+    'YESTERDAY',
+    'LAST_7_DAYS',
+    'LAST_30_DAYS',
+    'THIS_MONTH',
     'LAST_MONTH',
     'ALL_TIME'
   ]).optional().default('LAST_30_DAYS'),
@@ -53,10 +53,10 @@ function microsToNumber(micros: string | number | undefined): number | undefined
 
 export async function listAds(args: z.infer<typeof listAdsSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
     let query = `
-      SELECT 
+      SELECT
         ad_group_ad.ad.id,
         ad_group_ad.ad.name,
         ad_group_ad.ad.type,
@@ -78,30 +78,30 @@ export async function listAds(args: z.infer<typeof listAdsSchema>) {
         metrics.average_cpc
       FROM ad_group_ad
     `;
-    
+
     const conditions = [];
-    
+
     if (args.adGroupId) {
       conditions.push(`ad_group.id = ${args.adGroupId}`);
     }
-    
+
     if (args.campaignId) {
       conditions.push(`campaign.id = ${args.campaignId}`);
     }
-    
+
     if (!args.includeRemoved) {
       conditions.push(`ad_group_ad.status != 'REMOVED'`);
     }
-    
+
     if (conditions.length > 0) {
       query += ` WHERE ${conditions.join(' AND ')}`;
     }
-    
+
     query += ` ORDER BY ad_group_ad.ad.id DESC LIMIT ${args.limit}`;
-    
+
     const response = await client.query(query);
-    
-    return response.map(row => ({
+
+    return response.map((row: any) => ({
       id: row.ad_group_ad?.ad?.id,
       name: row.ad_group_ad?.ad?.name,
       type: row.ad_group_ad?.ad?.type,
@@ -124,97 +124,83 @@ export async function listAds(args: z.infer<typeof listAdsSchema>) {
         averageCpc: microsToNumber(row.metrics?.average_cpc) || 0,
       }
     }));
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to list ads: ${error.message}`);
   }
 }
 
 export async function createResponsiveSearchAd(args: z.infer<typeof createResponsiveSearchAdSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
-    const adOperation = {
-      create: {
-        ad_group: `customers/${client.getCustomerId()}/adGroups/${args.adGroupId}`,
-        status: 'ENABLED',
-        ad: {
-          responsive_search_ad: {
-            headlines: args.headlines.map(headline => ({
-              text: headline.text,
-              pinned_field: headline.pinned_field,
-            })),
-            descriptions: args.descriptions.map(description => ({
-              text: description.text,
-              pinned_field: description.pinned_field,
-            })),
-            path1: args.path1,
-            path2: args.path2,
-          },
-          final_urls: args.finalUrls,
-          final_mobile_urls: args.finalMobileUrls,
-          tracking_url_template: args.trackingUrlTemplate,
+    const customerId = client.credentials.customer_id;
+
+    const response = await client.adGroupAds.create([{
+      ad_group: `customers/${customerId}/adGroups/${args.adGroupId}`,
+      status: 'ENABLED',
+      ad: {
+        responsive_search_ad: {
+          headlines: args.headlines.map(headline => ({
+            text: headline.text,
+            pinned_field: headline.pinned_field,
+          })),
+          descriptions: args.descriptions.map(description => ({
+            text: description.text,
+            pinned_field: description.pinned_field,
+          })),
+          path1: args.path1,
+          path2: args.path2,
         },
+        final_urls: args.finalUrls,
+        final_mobile_urls: args.finalMobileUrls,
+        tracking_url_template: args.trackingUrlTemplate,
       },
-    };
-    
-    const response = await client.adGroupAdService.mutateAdGroupAds({
-      customer_id: client.getCustomerId(),
-      operations: [adOperation],
-    });
-    
+    }]);
+
     const result = response.results?.[0];
     const adId = result?.resource_name?.split('~').pop();
-    
+
     return {
       success: true,
       adId,
       resourceName: result?.resource_name,
     };
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to create ad: ${error.message}`);
   }
 }
 
 export async function updateAd(args: z.infer<typeof updateAdSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
-    const resourceName = `customers/${client.getCustomerId()}/adGroupAds/${args.adGroupId}~${args.adId}`;
-    
-    const adOperation = {
-      update: {
-        resource_name: resourceName,
-        status: args.status,
-      },
-      update_mask: {
-        paths: ['status'],
-      },
-    };
-    
-    const response = await client.adGroupAdService.mutateAdGroupAds({
-      customer_id: client.getCustomerId(),
-      operations: [adOperation],
-    });
-    
+    const customerId = client.credentials.customer_id;
+    const resourceName = `customers/${customerId}/adGroupAds/${args.adGroupId}~${args.adId}`;
+
+    const response = await client.adGroupAds.update([{
+      resource_name: resourceName,
+      status: args.status,
+    }]);
+
     return {
       success: true,
       resourceName: response.results?.[0]?.resource_name,
     };
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to update ad: ${error.message}`);
   }
 }
 
 export async function getAdPerformance(args: z.infer<typeof getAdPerformanceSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
-    const dateRangeClause = args.dateRange === 'ALL_TIME' 
-      ? '' 
+    const dateRangeClause = args.dateRange === 'ALL_TIME'
+      ? ''
       : ` DURING ${args.dateRange}`;
-    
+
     const query = `
-      SELECT 
+      SELECT
         ad_group_ad.ad.id,
         ad_group_ad.ad.name,
         ad_group_ad.ad.type,
@@ -237,15 +223,15 @@ export async function getAdPerformance(args: z.infer<typeof getAdPerformanceSche
         AND ad_group.id = ${args.adGroupId}
       ${dateRangeClause}
     `;
-    
+
     const response = await client.query(query);
-    
+
     if (response.length === 0) {
       throw new Error('Ad not found');
     }
-    
+
     const row = response[0];
-    
+
     return {
       id: row.ad_group_ad?.ad?.id,
       name: row.ad_group_ad?.ad?.name,
@@ -268,7 +254,7 @@ export async function getAdPerformance(args: z.infer<typeof getAdPerformanceSche
         allConversionsValue: microsToNumber(row.metrics?.all_conversions_value) || 0,
       }
     };
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to get ad performance: ${error.message}`);
   }
 }

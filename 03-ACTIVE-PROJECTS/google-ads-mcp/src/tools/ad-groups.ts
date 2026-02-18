@@ -39,10 +39,10 @@ function microsToNumber(micros: string | number | undefined): number | undefined
 
 export async function listAdGroups(args: z.infer<typeof listAdGroupsSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
     let query = `
-      SELECT 
+      SELECT
         ad_group.id,
         ad_group.name,
         ad_group.status,
@@ -59,26 +59,26 @@ export async function listAdGroups(args: z.infer<typeof listAdGroupsSchema>) {
         metrics.conversions_value
       FROM ad_group
     `;
-    
+
     const conditions = [];
-    
+
     if (args.campaignId) {
       conditions.push(`campaign.id = ${args.campaignId}`);
     }
-    
+
     if (!args.includeRemoved) {
       conditions.push(`ad_group.status != 'REMOVED'`);
     }
-    
+
     if (conditions.length > 0) {
       query += ` WHERE ${conditions.join(' AND ')}`;
     }
-    
+
     query += ` ORDER BY ad_group.id DESC LIMIT ${args.limit}`;
-    
+
     const response = await client.query(query);
-    
-    return response.map(row => ({
+
+    return response.map((row: any) => ({
       id: row.ad_group?.id,
       name: row.ad_group?.name,
       status: row.ad_group?.status,
@@ -96,112 +96,75 @@ export async function listAdGroups(args: z.infer<typeof listAdGroupsSchema>) {
         conversionsValue: microsToNumber(row.metrics?.conversions_value) || 0,
       }
     }));
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to list ad groups: ${error.message}`);
   }
 }
 
 export async function createAdGroup(args: z.infer<typeof createAdGroupSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
-    const adGroupOperation = {
-      create: {
-        campaign: `customers/${client.getCustomerId()}/campaigns/${args.campaignId}`,
-        name: args.name,
-        status: args.status,
-        cpc_bid_micros: args.cpcBidMicros,
-        cpm_bid_micros: args.cpmBidMicros,
-        target_cpa_micros: args.targetCpaMicros,
-        target_roas: args.targetRoas,
-      }
+    const customerId = client.credentials.customer_id;
+    const adGroup: any = {
+      campaign: `customers/${customerId}/campaigns/${args.campaignId}`,
+      name: args.name,
+      status: args.status,
     };
-    
-    const response = await client.adGroupService.mutateAdGroups({
-      customer_id: client.getCustomerId(),
-      operations: [adGroupOperation],
-    });
-    
+
+    if (args.cpcBidMicros !== undefined) adGroup.cpc_bid_micros = args.cpcBidMicros;
+    if (args.cpmBidMicros !== undefined) adGroup.cpm_bid_micros = args.cpmBidMicros;
+    if (args.targetCpaMicros !== undefined) adGroup.target_cpa_micros = args.targetCpaMicros;
+    if (args.targetRoas !== undefined) adGroup.target_roas = args.targetRoas;
+
+    const response = await client.adGroups.create([adGroup]);
+
     const result = response.results?.[0];
     const adGroupId = result?.resource_name?.split('/').pop();
-    
+
     return {
       success: true,
       adGroupId,
       resourceName: result?.resource_name,
     };
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to create ad group: ${error.message}`);
   }
 }
 
 export async function updateAdGroup(args: z.infer<typeof updateAdGroupSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
+    const customerId = client.credentials.customer_id;
     const updateObject: any = {
-      resource_name: `customers/${client.getCustomerId()}/adGroups/${args.adGroupId}`,
+      resource_name: `customers/${customerId}/adGroups/${args.adGroupId}`,
     };
-    
-    const updateMask = [];
-    
-    if (args.name !== undefined) {
-      updateObject.name = args.name;
-      updateMask.push('name');
-    }
-    
-    if (args.status !== undefined) {
-      updateObject.status = args.status;
-      updateMask.push('status');
-    }
-    
-    if (args.cpcBidMicros !== undefined) {
-      updateObject.cpc_bid_micros = args.cpcBidMicros;
-      updateMask.push('cpc_bid_micros');
-    }
-    
-    if (args.cpmBidMicros !== undefined) {
-      updateObject.cpm_bid_micros = args.cpmBidMicros;
-      updateMask.push('cpm_bid_micros');
-    }
-    
-    if (args.targetCpaMicros !== undefined) {
-      updateObject.target_cpa_micros = args.targetCpaMicros;
-      updateMask.push('target_cpa_micros');
-    }
-    
-    if (args.targetRoas !== undefined) {
-      updateObject.target_roas = args.targetRoas;
-      updateMask.push('target_roas');
-    }
-    
-    const adGroupOperation = {
-      update: updateObject,
-      update_mask: {
-        paths: updateMask,
-      },
-    };
-    
-    const response = await client.adGroupService.mutateAdGroups({
-      customer_id: client.getCustomerId(),
-      operations: [adGroupOperation],
-    });
-    
+
+    if (args.name !== undefined) updateObject.name = args.name;
+    if (args.status !== undefined) updateObject.status = args.status;
+    if (args.cpcBidMicros !== undefined) updateObject.cpc_bid_micros = args.cpcBidMicros;
+    if (args.cpmBidMicros !== undefined) updateObject.cpm_bid_micros = args.cpmBidMicros;
+    if (args.targetCpaMicros !== undefined) updateObject.target_cpa_micros = args.targetCpaMicros;
+    if (args.targetRoas !== undefined) updateObject.target_roas = args.targetRoas;
+
+    const response = await client.adGroups.update([updateObject]);
+
     return {
       success: true,
       resourceName: response.results?.[0]?.resource_name,
     };
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to update ad group: ${error.message}`);
   }
 }
 
 export async function getAdGroup(args: z.infer<typeof getAdGroupSchema>) {
   const client = createGoogleAdsClient();
-  
+
   try {
     const query = `
-      SELECT 
+      SELECT
         ad_group.id,
         ad_group.name,
         ad_group.status,
@@ -217,15 +180,15 @@ export async function getAdGroup(args: z.infer<typeof getAdGroupSchema>) {
       FROM ad_group
       WHERE ad_group.id = ${args.adGroupId}
     `;
-    
+
     const response = await client.query(query);
-    
+
     if (response.length === 0) {
       throw new Error('Ad group not found');
     }
-    
+
     const row = response[0];
-    
+
     return {
       id: row.ad_group?.id,
       name: row.ad_group?.name,
@@ -239,7 +202,7 @@ export async function getAdGroup(args: z.infer<typeof getAdGroupSchema>) {
       effectiveTargetCpaMicros: row.ad_group?.effective_target_cpa_micros,
       effectiveTargetRoas: row.ad_group?.effective_target_roas,
     };
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Failed to get ad group: ${error.message}`);
   }
 }

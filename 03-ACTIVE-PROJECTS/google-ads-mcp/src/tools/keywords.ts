@@ -42,21 +42,21 @@ export const getKeywordPerformanceSchema = z.object({
 
 export async function listKeywords(params: z.infer<typeof listKeywordsSchema>) {
   const customer = createGoogleAdsClient();
-  
+
   let whereClause = 'WHERE ad_group_criterion.type = "KEYWORD"';
-  
+
   if (!params.includeNegative) {
     whereClause += ' AND ad_group_criterion.negative = FALSE';
   }
-  
+
   if (params.campaignId) {
     whereClause += ` AND campaign.id = ${params.campaignId}`;
   }
-  
+
   if (params.adGroupId) {
     whereClause += ` AND ad_group.id = ${params.adGroupId}`;
   }
-  
+
   const query = `
     SELECT
       ad_group_criterion.criterion_id,
@@ -82,15 +82,15 @@ export async function listKeywords(params: z.infer<typeof listKeywordsSchema>) {
   `;
 
   const keywords = await customer.query(query);
-  
+
   return keywords.map((keyword: any) => ({
     id: keyword.ad_group_criterion.criterion_id,
     text: keyword.ad_group_criterion.keyword.text,
     matchType: keyword.ad_group_criterion.keyword.match_type,
     status: keyword.ad_group_criterion.status,
     isNegative: keyword.ad_group_criterion.negative,
-    cpcBid: keyword.ad_group_criterion.cpc_bid_micros ? 
-      parseInt(keyword.ad_group_criterion.cpc_bid_micros) / 1_000_000 : null,
+    cpcBid: keyword.ad_group_criterion.cpc_bid_micros ?
+      Number(keyword.ad_group_criterion.cpc_bid_micros) / 1_000_000 : null,
     adGroup: {
       id: keyword.ad_group.id,
       name: keyword.ad_group.name,
@@ -102,127 +102,127 @@ export async function listKeywords(params: z.infer<typeof listKeywordsSchema>) {
     metrics: {
       impressions: keyword.metrics?.impressions || 0,
       clicks: keyword.metrics?.clicks || 0,
-      cost: keyword.metrics?.cost_micros ? 
-        parseInt(keyword.metrics.cost_micros) / 1_000_000 : 0,
+      cost: keyword.metrics?.cost_micros ?
+        Number(keyword.metrics.cost_micros) / 1_000_000 : 0,
       conversions: keyword.metrics?.conversions || 0,
       ctr: keyword.metrics?.ctr || 0,
-      avgCpc: keyword.metrics?.average_cpc ? 
-        parseInt(keyword.metrics.average_cpc) / 1_000_000 : 0,
+      avgCpc: keyword.metrics?.average_cpc ?
+        Number(keyword.metrics.average_cpc) / 1_000_000 : 0,
     }
   }));
 }
 
 export async function addKeywords(params: z.infer<typeof addKeywordsSchema>) {
   const customer = createGoogleAdsClient();
-  
-  const operations = params.keywords.map(keyword => ({
-    create: {
-      ad_group: `customers/${customer.credentials.customer_id}/adGroups/${params.adGroupId}`,
+  const customerId = customer.credentials.customer_id;
+
+  const criteria = params.keywords.map(keyword => {
+    const criterion: any = {
+      ad_group: `customers/${customerId}/adGroups/${params.adGroupId}`,
       status: 'ENABLED',
       keyword: {
         text: keyword.text,
         match_type: keyword.matchType,
       },
-      cpc_bid_micros: keyword.cpcBidMicros,
+    };
+    if (keyword.cpcBidMicros !== undefined) {
+      criterion.cpc_bid_micros = keyword.cpcBidMicros;
     }
-  }));
-  
-  const results = await customer.adGroupCriteria.create(operations);
-  
+    return criterion;
+  });
+
+  const response = await customer.adGroupCriteria.create(criteria);
+
   return {
     success: true,
-    addedKeywords: results.length,
-    keywords: results.map((result: any) => ({
-      id: result.resource_name.split('/').pop(),
-      text: params.keywords[results.indexOf(result)].text,
-      matchType: params.keywords[results.indexOf(result)].matchType,
+    addedKeywords: response.results?.length || params.keywords.length,
+    keywords: params.keywords.map((kw, i) => ({
+      id: response.results?.[i]?.resource_name?.split('~').pop(),
+      text: kw.text,
+      matchType: kw.matchType,
     })),
   };
 }
 
 export async function addNegativeKeywords(params: z.infer<typeof addNegativeKeywordsSchema>) {
   const customer = createGoogleAdsClient();
-  
+  const customerId = customer.credentials.customer_id;
+
   if (!params.campaignId && !params.adGroupId) {
     throw new Error('Either campaignId or adGroupId must be provided');
   }
-  
+
   if (params.adGroupId) {
-    const operations = params.keywords.map(keyword => ({
-      create: {
-        ad_group: `customers/${customer.credentials.customer_id}/adGroups/${params.adGroupId}`,
-        status: 'ENABLED',
-        negative: true,
-        keyword: {
-          text: keyword.text,
-          match_type: keyword.matchType,
-        },
-      }
+    const criteria = params.keywords.map(keyword => ({
+      ad_group: `customers/${customerId}/adGroups/${params.adGroupId}`,
+      status: 'ENABLED',
+      negative: true,
+      keyword: {
+        text: keyword.text,
+        match_type: keyword.matchType,
+      },
     }));
-    
-    const results = await customer.adGroupCriteria.create(operations);
-    
+
+    const response = await customer.adGroupCriteria.create(criteria as any);
+
     return {
       success: true,
       level: 'ad_group',
-      addedKeywords: results.length,
+      addedKeywords: response.results?.length || params.keywords.length,
     };
   } else if (params.campaignId) {
-    const operations = params.keywords.map(keyword => ({
-      create: {
-        campaign: `customers/${customer.credentials.customer_id}/campaigns/${params.campaignId}`,
-        negative: true,
-        keyword: {
-          text: keyword.text,
-          match_type: keyword.matchType,
-        },
-      }
+    const criteria = params.keywords.map(keyword => ({
+      campaign: `customers/${customerId}/campaigns/${params.campaignId}`,
+      negative: true,
+      keyword: {
+        text: keyword.text,
+        match_type: keyword.matchType,
+      },
     }));
-    
-    const results = await customer.campaignCriteria.create(operations);
-    
+
+    const response = await customer.campaignCriteria.create(criteria as any);
+
     return {
       success: true,
       level: 'campaign',
-      addedKeywords: results.length,
+      addedKeywords: response.results?.length || params.keywords.length,
     };
   }
 }
 
 export async function updateKeyword(params: z.infer<typeof updateKeywordSchema>) {
   const customer = createGoogleAdsClient();
-  
-  const updates: any = {};
-  
+  const customerId = customer.credentials.customer_id;
+
+  const updateObject: any = {
+    resource_name: `customers/${customerId}/adGroupCriteria/${params.adGroupId}~${params.keywordId}`,
+  };
+
   if (params.status !== undefined) {
-    updates.status = params.status;
+    updateObject.status = params.status;
   }
-  
+
   if (params.cpcBidMicros !== undefined) {
-    updates.cpc_bid_micros = params.cpcBidMicros;
+    updateObject.cpc_bid_micros = params.cpcBidMicros;
   }
-  
-  await customer.adGroupCriteria.update({
-    resource_name: `customers/${customer.credentials.customer_id}/adGroupCriteria/${params.adGroupId}~${params.keywordId}`,
-    ...updates,
-  });
-  
+
+  await customer.adGroupCriteria.update([updateObject]);
+
   return { success: true, keywordId: params.keywordId };
 }
 
 export async function getKeywordPerformance(params: z.infer<typeof getKeywordPerformanceSchema>) {
   const customer = createGoogleAdsClient();
-  
+
   const query = `
     SELECT
       ad_group_criterion.criterion_id,
       ad_group_criterion.keyword.text,
       ad_group_criterion.keyword.match_type,
-      ad_group_criterion.quality_score,
-      ad_group_criterion.quality_score.quality_score,
-      ad_group_criterion.quality_score.creative_quality_score,
-      ad_group_criterion.quality_score.post_click_quality_score,
-      ad_group_criterion.quality_score.search_predicted_ctr,
+      ad_group_criterion.quality_info.quality_score,
+      ad_group_criterion.quality_info.creative_quality_score,
+      ad_group_criterion.quality_info.post_click_quality_score,
+      ad_group_criterion.quality_info.search_predicted_ctr,
       metrics.impressions,
       metrics.clicks,
       metrics.cost_micros,
@@ -235,40 +235,40 @@ export async function getKeywordPerformance(params: z.infer<typeof getKeywordPer
       metrics.search_rank_lost_impression_share,
       metrics.search_budget_lost_impression_share
     FROM ad_group_criterion
-    WHERE ad_group_criterion.type = "KEYWORD" 
+    WHERE ad_group_criterion.type = "KEYWORD"
       AND ad_group_criterion.criterion_id = ${params.keywordId}
       AND ad_group.id = ${params.adGroupId}
       AND segments.date DURING ${params.dateRange}
   `;
 
   const [keyword] = await customer.query(query);
-  
+
   if (!keyword) {
     throw new Error(`Keyword with ID ${params.keywordId} not found`);
   }
-  
+
   return {
     id: keyword.ad_group_criterion.criterion_id,
     text: keyword.ad_group_criterion.keyword.text,
     matchType: keyword.ad_group_criterion.keyword.match_type,
     qualityScore: {
-      score: keyword.ad_group_criterion.quality_score?.quality_score || null,
-      creativeQuality: keyword.ad_group_criterion.quality_score?.creative_quality_score || null,
-      postClickQuality: keyword.ad_group_criterion.quality_score?.post_click_quality_score || null,
-      expectedCtr: keyword.ad_group_criterion.quality_score?.search_predicted_ctr || null,
+      score: keyword.ad_group_criterion.quality_info?.quality_score || null,
+      creativeQuality: keyword.ad_group_criterion.quality_info?.creative_quality_score || null,
+      postClickQuality: keyword.ad_group_criterion.quality_info?.post_click_quality_score || null,
+      expectedCtr: keyword.ad_group_criterion.quality_info?.search_predicted_ctr || null,
     },
     metrics: {
       impressions: keyword.metrics?.impressions || 0,
       clicks: keyword.metrics?.clicks || 0,
-      cost: keyword.metrics?.cost_micros ? 
-        parseInt(keyword.metrics.cost_micros) / 1_000_000 : 0,
+      cost: keyword.metrics?.cost_micros ?
+        Number(keyword.metrics.cost_micros) / 1_000_000 : 0,
       conversions: keyword.metrics?.conversions || 0,
       ctr: keyword.metrics?.ctr || 0,
-      avgCpc: keyword.metrics?.average_cpc ? 
-        parseInt(keyword.metrics.average_cpc) / 1_000_000 : 0,
+      avgCpc: keyword.metrics?.average_cpc ?
+        Number(keyword.metrics.average_cpc) / 1_000_000 : 0,
       conversionRate: keyword.metrics?.conversions_from_interactions_rate || 0,
-      costPerConversion: keyword.metrics?.cost_per_conversion ? 
-        parseInt(keyword.metrics.cost_per_conversion) / 1_000_000 : 0,
+      costPerConversion: keyword.metrics?.cost_per_conversion ?
+        Number(keyword.metrics.cost_per_conversion) / 1_000_000 : 0,
       impressionShare: keyword.metrics?.search_impression_share || 0,
       rankLostImpressionShare: keyword.metrics?.search_rank_lost_impression_share || 0,
       budgetLostImpressionShare: keyword.metrics?.search_budget_lost_impression_share || 0,
@@ -303,10 +303,10 @@ export const keywordTools: Tool[] = [
             type: 'object',
             properties: {
               text: { type: 'string', description: 'Keyword text' },
-              matchType: { 
+              matchType: {
                 type: 'string',
                 enum: ['EXACT', 'PHRASE', 'BROAD'],
-                description: 'Keyword match type' 
+                description: 'Keyword match type'
               },
               cpcBidMicros: { type: 'number', description: 'CPC bid in micros (optional)' },
             },
@@ -331,10 +331,10 @@ export const keywordTools: Tool[] = [
             type: 'object',
             properties: {
               text: { type: 'string', description: 'Keyword text' },
-              matchType: { 
+              matchType: {
                 type: 'string',
                 enum: ['EXACT', 'PHRASE', 'BROAD'],
-                description: 'Keyword match type' 
+                description: 'Keyword match type'
               },
             },
             required: ['text', 'matchType'],
@@ -352,10 +352,10 @@ export const keywordTools: Tool[] = [
       properties: {
         keywordId: { type: 'string', description: 'Keyword ID' },
         adGroupId: { type: 'string', description: 'Ad group ID' },
-        status: { 
+        status: {
           type: 'string',
           enum: ['ENABLED', 'PAUSED', 'REMOVED'],
-          description: 'New keyword status' 
+          description: 'New keyword status'
         },
         cpcBidMicros: { type: 'number', description: 'New CPC bid in micros' },
       },
@@ -370,10 +370,10 @@ export const keywordTools: Tool[] = [
       properties: {
         keywordId: { type: 'string', description: 'Keyword ID' },
         adGroupId: { type: 'string', description: 'Ad group ID' },
-        dateRange: { 
+        dateRange: {
           type: 'string',
           enum: ['TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'LAST_30_DAYS', 'THIS_MONTH', 'LAST_MONTH'],
-          description: 'Date range for metrics' 
+          description: 'Date range for metrics'
         },
       },
       required: ['keywordId', 'adGroupId'],
