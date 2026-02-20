@@ -73,6 +73,24 @@ cd openclaw-native-setup
 
 ---
 
+### [`openclaw-watch-setup/`](openclaw-watch-setup/)
+**Apple Watch Companion** (Wearable MVP — v2026.2.19+)
+
+OpenClaw on your wrist via the iOS companion app:
+- Watch inbox UI with message previews
+- Notification relay from gateway channels
+- Quick reply actions from the wrist
+- APNs background wake for reliable delivery
+- Gateway command surfaces for watch status/send
+
+**Best for**: Personal use, on-the-go notifications, quick triage without pulling out your phone
+
+**Requirements**: Apple Watch Series 6+, iPhone 14+, Xcode 16+ (self-compile — no App Store release yet)
+
+See [openclaw-watch-setup/PLANNING/](openclaw-watch-setup/PLANNING/) for Phase 0-5 implementation details.
+
+---
+
 ## Cloud Deployment Toolkits
 
 ### [`digitalocean-setup/`](digitalocean-setup/)
