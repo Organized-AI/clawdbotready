@@ -3,6 +3,7 @@ import { createGoogleAdsClient } from '../google-ads-client.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 export const listKeywordsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string().optional(),
   adGroupId: z.string().optional(),
   limit: z.number().optional().default(100),
@@ -10,6 +11,7 @@ export const listKeywordsSchema = z.object({
 });
 
 export const addKeywordsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   adGroupId: z.string(),
   keywords: z.array(z.object({
     text: z.string(),
@@ -19,6 +21,7 @@ export const addKeywordsSchema = z.object({
 });
 
 export const addNegativeKeywordsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string().optional(),
   adGroupId: z.string().optional(),
   keywords: z.array(z.object({
@@ -28,6 +31,7 @@ export const addNegativeKeywordsSchema = z.object({
 });
 
 export const updateKeywordSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   keywordId: z.string(),
   adGroupId: z.string(),
   status: z.enum(['ENABLED', 'PAUSED', 'REMOVED']).optional(),
@@ -35,13 +39,14 @@ export const updateKeywordSchema = z.object({
 });
 
 export const getKeywordPerformanceSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   keywordId: z.string(),
   adGroupId: z.string(),
   dateRange: z.enum(['TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'LAST_30_DAYS', 'THIS_MONTH', 'LAST_MONTH']).optional().default('LAST_30_DAYS'),
 });
 
 export async function listKeywords(params: z.infer<typeof listKeywordsSchema>) {
-  const customer = createGoogleAdsClient();
+  const customer = createGoogleAdsClient(params.customerId);
 
   let whereClause = 'WHERE ad_group_criterion.type = "KEYWORD"';
 
@@ -113,12 +118,12 @@ export async function listKeywords(params: z.infer<typeof listKeywordsSchema>) {
 }
 
 export async function addKeywords(params: z.infer<typeof addKeywordsSchema>) {
-  const customer = createGoogleAdsClient();
-  const customerId = customer.credentials.customer_id;
+  const customer = createGoogleAdsClient(params.customerId);
+  const cid = customer.credentials.customer_id;
 
   const criteria = params.keywords.map(keyword => {
     const criterion: any = {
-      ad_group: `customers/${customerId}/adGroups/${params.adGroupId}`,
+      ad_group: `customers/${cid}/adGroups/${params.adGroupId}`,
       status: 'ENABLED',
       keyword: {
         text: keyword.text,
@@ -145,8 +150,8 @@ export async function addKeywords(params: z.infer<typeof addKeywordsSchema>) {
 }
 
 export async function addNegativeKeywords(params: z.infer<typeof addNegativeKeywordsSchema>) {
-  const customer = createGoogleAdsClient();
-  const customerId = customer.credentials.customer_id;
+  const customer = createGoogleAdsClient(params.customerId);
+  const cid = customer.credentials.customer_id;
 
   if (!params.campaignId && !params.adGroupId) {
     throw new Error('Either campaignId or adGroupId must be provided');
@@ -154,7 +159,7 @@ export async function addNegativeKeywords(params: z.infer<typeof addNegativeKeyw
 
   if (params.adGroupId) {
     const criteria = params.keywords.map(keyword => ({
-      ad_group: `customers/${customerId}/adGroups/${params.adGroupId}`,
+      ad_group: `customers/${cid}/adGroups/${params.adGroupId}`,
       status: 'ENABLED',
       negative: true,
       keyword: {
@@ -172,7 +177,7 @@ export async function addNegativeKeywords(params: z.infer<typeof addNegativeKeyw
     };
   } else if (params.campaignId) {
     const criteria = params.keywords.map(keyword => ({
-      campaign: `customers/${customerId}/campaigns/${params.campaignId}`,
+      campaign: `customers/${cid}/campaigns/${params.campaignId}`,
       negative: true,
       keyword: {
         text: keyword.text,
@@ -191,11 +196,11 @@ export async function addNegativeKeywords(params: z.infer<typeof addNegativeKeyw
 }
 
 export async function updateKeyword(params: z.infer<typeof updateKeywordSchema>) {
-  const customer = createGoogleAdsClient();
-  const customerId = customer.credentials.customer_id;
+  const customer = createGoogleAdsClient(params.customerId);
+  const cid = customer.credentials.customer_id;
 
   const updateObject: any = {
-    resource_name: `customers/${customerId}/adGroupCriteria/${params.adGroupId}~${params.keywordId}`,
+    resource_name: `customers/${cid}/adGroupCriteria/${params.adGroupId}~${params.keywordId}`,
   };
 
   if (params.status !== undefined) {
@@ -212,7 +217,7 @@ export async function updateKeyword(params: z.infer<typeof updateKeywordSchema>)
 }
 
 export async function getKeywordPerformance(params: z.infer<typeof getKeywordPerformanceSchema>) {
-  const customer = createGoogleAdsClient();
+  const customer = createGoogleAdsClient(params.customerId);
 
   const query = `
     SELECT
@@ -276,6 +281,13 @@ export async function getKeywordPerformance(params: z.infer<typeof getKeywordPer
   };
 }
 
+const customerIdProp = {
+  customerId: {
+    type: 'string' as const,
+    description: 'Google Ads customer ID to target. If omitted, uses the default account.',
+  },
+};
+
 export const keywordTools: Tool[] = [
   {
     name: 'list_keywords',
@@ -283,6 +295,7 @@ export const keywordTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: { type: 'string', description: 'Filter by campaign ID' },
         adGroupId: { type: 'string', description: 'Filter by ad group ID' },
         limit: { type: 'number', description: 'Maximum number of keywords to return' },
@@ -296,6 +309,7 @@ export const keywordTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         adGroupId: { type: 'string', description: 'Ad group ID' },
         keywords: {
           type: 'array',
@@ -323,6 +337,7 @@ export const keywordTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: { type: 'string', description: 'Campaign ID (for campaign-level negatives)' },
         adGroupId: { type: 'string', description: 'Ad group ID (for ad group-level negatives)' },
         keywords: {
@@ -350,6 +365,7 @@ export const keywordTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         keywordId: { type: 'string', description: 'Keyword ID' },
         adGroupId: { type: 'string', description: 'Ad group ID' },
         status: {
@@ -368,6 +384,7 @@ export const keywordTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         keywordId: { type: 'string', description: 'Keyword ID' },
         adGroupId: { type: 'string', description: 'Ad group ID' },
         dateRange: {

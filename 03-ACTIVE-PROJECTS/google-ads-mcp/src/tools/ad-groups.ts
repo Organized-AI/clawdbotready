@@ -3,12 +3,14 @@ import { createGoogleAdsClient } from '../google-ads-client.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 export const listAdGroupsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string().optional(),
   limit: z.number().optional().default(100),
   includeRemoved: z.boolean().optional().default(false),
 });
 
 export const createAdGroupSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string(),
   name: z.string(),
   status: z.enum(['ENABLED', 'PAUSED']).optional().default('ENABLED'),
@@ -19,6 +21,7 @@ export const createAdGroupSchema = z.object({
 });
 
 export const updateAdGroupSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   adGroupId: z.string(),
   name: z.string().optional(),
   status: z.enum(['ENABLED', 'PAUSED', 'REMOVED']).optional(),
@@ -29,6 +32,7 @@ export const updateAdGroupSchema = z.object({
 });
 
 export const getAdGroupSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   adGroupId: z.string(),
 });
 
@@ -38,7 +42,7 @@ function microsToNumber(micros: string | number | undefined): number | undefined
 }
 
 export async function listAdGroups(args: z.infer<typeof listAdGroupsSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
     let query = `
@@ -102,12 +106,12 @@ export async function listAdGroups(args: z.infer<typeof listAdGroupsSchema>) {
 }
 
 export async function createAdGroup(args: z.infer<typeof createAdGroupSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
-    const customerId = client.credentials.customer_id;
+    const cid = client.credentials.customer_id;
     const adGroup: any = {
-      campaign: `customers/${customerId}/campaigns/${args.campaignId}`,
+      campaign: `customers/${cid}/campaigns/${args.campaignId}`,
       name: args.name,
       status: args.status,
     };
@@ -133,12 +137,12 @@ export async function createAdGroup(args: z.infer<typeof createAdGroupSchema>) {
 }
 
 export async function updateAdGroup(args: z.infer<typeof updateAdGroupSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
-    const customerId = client.credentials.customer_id;
+    const cid = client.credentials.customer_id;
     const updateObject: any = {
-      resource_name: `customers/${customerId}/adGroups/${args.adGroupId}`,
+      resource_name: `customers/${cid}/adGroups/${args.adGroupId}`,
     };
 
     if (args.name !== undefined) updateObject.name = args.name;
@@ -160,7 +164,7 @@ export async function updateAdGroup(args: z.infer<typeof updateAdGroupSchema>) {
 }
 
 export async function getAdGroup(args: z.infer<typeof getAdGroupSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
     const query = `
@@ -207,6 +211,13 @@ export async function getAdGroup(args: z.infer<typeof getAdGroupSchema>) {
   }
 }
 
+const customerIdProp = {
+  customerId: {
+    type: 'string' as const,
+    description: 'Google Ads customer ID to target. If omitted, uses the default account.',
+  },
+};
+
 export const adGroupTools: Tool[] = [
   {
     name: 'list_ad_groups',
@@ -214,6 +225,7 @@ export const adGroupTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: {
           type: 'string',
           description: 'Filter by campaign ID (optional)',
@@ -235,6 +247,7 @@ export const adGroupTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: {
           type: 'string',
           description: 'Campaign ID where the ad group will be created',
@@ -274,6 +287,7 @@ export const adGroupTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         adGroupId: {
           type: 'string',
           description: 'Ad group ID to update',
@@ -313,6 +327,7 @@ export const adGroupTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         adGroupId: {
           type: 'string',
           description: 'Ad group ID',

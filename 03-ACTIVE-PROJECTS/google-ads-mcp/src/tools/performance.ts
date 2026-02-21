@@ -3,13 +3,14 @@ import { createGoogleAdsClient } from '../google-ads-client.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 export const getAccountPerformanceSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   dateRange: z.enum([
-    'TODAY', 
-    'YESTERDAY', 
-    'LAST_7_DAYS', 
+    'TODAY',
+    'YESTERDAY',
+    'LAST_7_DAYS',
     'LAST_14_DAYS',
-    'LAST_30_DAYS', 
-    'THIS_MONTH', 
+    'LAST_30_DAYS',
+    'THIS_MONTH',
     'LAST_MONTH',
     'THIS_QUARTER',
     'LAST_QUARTER',
@@ -25,40 +26,43 @@ export const getAccountPerformanceSchema = z.object({
 });
 
 export const getCampaignPerformanceSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string(),
   dateRange: z.enum([
-    'TODAY', 
-    'YESTERDAY', 
-    'LAST_7_DAYS', 
+    'TODAY',
+    'YESTERDAY',
+    'LAST_7_DAYS',
     'LAST_14_DAYS',
-    'LAST_30_DAYS', 
-    'THIS_MONTH', 
+    'LAST_30_DAYS',
+    'THIS_MONTH',
     'LAST_MONTH'
   ]).optional().default('LAST_30_DAYS'),
   segmentByDate: z.boolean().optional().default(false),
 });
 
 export const getAdGroupPerformanceSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   adGroupId: z.string().optional(),
   campaignId: z.string().optional(),
   dateRange: z.enum([
-    'TODAY', 
-    'YESTERDAY', 
-    'LAST_7_DAYS', 
-    'LAST_30_DAYS', 
-    'THIS_MONTH', 
+    'TODAY',
+    'YESTERDAY',
+    'LAST_7_DAYS',
+    'LAST_30_DAYS',
+    'THIS_MONTH',
     'LAST_MONTH'
   ]).optional().default('LAST_30_DAYS'),
   limit: z.number().optional().default(50),
 });
 
 export const getSearchTermsReportSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string().optional(),
   adGroupId: z.string().optional(),
   dateRange: z.enum([
-    'TODAY', 
-    'YESTERDAY', 
-    'LAST_7_DAYS', 
+    'TODAY',
+    'YESTERDAY',
+    'LAST_7_DAYS',
     'LAST_30_DAYS',
     'THIS_MONTH',
     'LAST_MONTH',
@@ -73,12 +77,12 @@ export const getSearchTermsReportSchema = z.object({
 });
 
 export async function getAccountPerformance(params: z.infer<typeof getAccountPerformanceSchema>) {
-  const customer = createGoogleAdsClient();
-  
+  const customer = createGoogleAdsClient(params.customerId);
+
   const segmentClause = params.segmentByDate ? ', segments.date' : '';
   const groupByClause = params.segmentByDate ? 'GROUP BY segments.date' : '';
   const orderByClause = params.segmentByDate ? 'ORDER BY segments.date DESC' : '';
-  
+
   const query = `
     SELECT
       customer.descriptive_name,
@@ -103,21 +107,21 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
   `;
 
   const results = await customer.query(query);
-  
+
   if (params.segmentByDate) {
     return results.map((row: any) => ({
       date: row.segments.date,
       metrics: {
         impressions: row.metrics?.impressions || 0,
         clicks: row.metrics?.clicks || 0,
-        cost: row.metrics?.cost_micros ? 
+        cost: row.metrics?.cost_micros ?
           Number(row.metrics.cost_micros) / 1_000_000 : 0,
         conversions: row.metrics?.conversions || 0,
         ctr: row.metrics?.ctr || 0,
-        avgCpc: row.metrics?.average_cpc ? 
+        avgCpc: row.metrics?.average_cpc ?
           Number(row.metrics.average_cpc) / 1_000_000 : 0,
         conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
-        costPerConversion: row.metrics?.cost_per_conversion ? 
+        costPerConversion: row.metrics?.cost_per_conversion ?
           Number(row.metrics.cost_per_conversion) / 1_000_000 : 0,
         impressionShare: row.metrics?.search_impression_share || 0,
         budgetLostImpressionShare: row.metrics?.search_budget_lost_impression_share || 0,
@@ -134,14 +138,14 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
       metrics: {
         impressions: summary.metrics?.impressions || 0,
         clicks: summary.metrics?.clicks || 0,
-        cost: summary.metrics?.cost_micros ? 
+        cost: summary.metrics?.cost_micros ?
           Number(summary.metrics.cost_micros) / 1_000_000 : 0,
         conversions: summary.metrics?.conversions || 0,
         ctr: summary.metrics?.ctr || 0,
-        avgCpc: summary.metrics?.average_cpc ? 
+        avgCpc: summary.metrics?.average_cpc ?
           Number(summary.metrics.average_cpc) / 1_000_000 : 0,
         conversionRate: summary.metrics?.conversions_from_interactions_rate || 0,
-        costPerConversion: summary.metrics?.cost_per_conversion ? 
+        costPerConversion: summary.metrics?.cost_per_conversion ?
           Number(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
         impressionShare: summary.metrics?.search_impression_share || 0,
         budgetLostImpressionShare: summary.metrics?.search_budget_lost_impression_share || 0,
@@ -152,12 +156,12 @@ export async function getAccountPerformance(params: z.infer<typeof getAccountPer
 }
 
 export async function getCampaignPerformance(params: z.infer<typeof getCampaignPerformanceSchema>) {
-  const customer = createGoogleAdsClient();
-  
+  const customer = createGoogleAdsClient(params.customerId);
+
   const segmentClause = params.segmentByDate ? ', segments.date' : '';
   const groupByClause = params.segmentByDate ? 'GROUP BY campaign.id, segments.date' : '';
   const orderByClause = params.segmentByDate ? 'ORDER BY segments.date DESC' : '';
-  
+
   const query = `
     SELECT
       campaign.id,
@@ -186,7 +190,7 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
   `;
 
   const results = await customer.query(query);
-  
+
   if (params.segmentByDate) {
     return {
       campaignId: params.campaignId,
@@ -196,15 +200,15 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
         metrics: {
           impressions: row.metrics?.impressions || 0,
           clicks: row.metrics?.clicks || 0,
-          cost: row.metrics?.cost_micros ? 
+          cost: row.metrics?.cost_micros ?
             Number(row.metrics.cost_micros) / 1_000_000 : 0,
           conversions: row.metrics?.conversions || 0,
           conversionsValue: row.metrics?.conversions_value || 0,
           ctr: row.metrics?.ctr || 0,
-          avgCpc: row.metrics?.average_cpc ? 
+          avgCpc: row.metrics?.average_cpc ?
             Number(row.metrics.average_cpc) / 1_000_000 : 0,
           conversionRate: row.metrics?.conversions_from_interactions_rate || 0,
-          costPerConversion: row.metrics?.cost_per_conversion ? 
+          costPerConversion: row.metrics?.cost_per_conversion ?
             Number(row.metrics.cost_per_conversion) / 1_000_000 : 0,
           valuePerConversion: row.metrics?.value_per_conversion || 0,
           impressionShare: row.metrics?.search_impression_share || 0,
@@ -222,15 +226,15 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
       metrics: {
         impressions: summary.metrics?.impressions || 0,
         clicks: summary.metrics?.clicks || 0,
-        cost: summary.metrics?.cost_micros ? 
+        cost: summary.metrics?.cost_micros ?
           Number(summary.metrics.cost_micros) / 1_000_000 : 0,
         conversions: summary.metrics?.conversions || 0,
         conversionsValue: summary.metrics?.conversions_value || 0,
         ctr: summary.metrics?.ctr || 0,
-        avgCpc: summary.metrics?.average_cpc ? 
+        avgCpc: summary.metrics?.average_cpc ?
           Number(summary.metrics.average_cpc) / 1_000_000 : 0,
         conversionRate: summary.metrics?.conversions_from_interactions_rate || 0,
-        costPerConversion: summary.metrics?.cost_per_conversion ? 
+        costPerConversion: summary.metrics?.cost_per_conversion ?
           Number(summary.metrics.cost_per_conversion) / 1_000_000 : 0,
         valuePerConversion: summary.metrics?.value_per_conversion || 0,
         impressionShare: summary.metrics?.search_impression_share || 0,
@@ -244,18 +248,18 @@ export async function getCampaignPerformance(params: z.infer<typeof getCampaignP
 }
 
 export async function getAdGroupPerformance(params: z.infer<typeof getAdGroupPerformanceSchema>) {
-  const customer = createGoogleAdsClient();
-  
+  const customer = createGoogleAdsClient(params.customerId);
+
   let whereClause = `WHERE segments.date DURING ${params.dateRange}`;
-  
+
   if (params.adGroupId) {
     whereClause += ` AND ad_group.id = ${params.adGroupId}`;
   }
-  
+
   if (params.campaignId) {
     whereClause += ` AND campaign.id = ${params.campaignId}`;
   }
-  
+
   const query = `
     SELECT
       ad_group.id,
@@ -278,7 +282,7 @@ export async function getAdGroupPerformance(params: z.infer<typeof getAdGroupPer
   `;
 
   const adGroups = await customer.query(query);
-  
+
   return adGroups.map((adGroup: any) => ({
     id: adGroup.ad_group.id,
     name: adGroup.ad_group.name,
@@ -290,40 +294,40 @@ export async function getAdGroupPerformance(params: z.infer<typeof getAdGroupPer
     metrics: {
       impressions: adGroup.metrics?.impressions || 0,
       clicks: adGroup.metrics?.clicks || 0,
-      cost: adGroup.metrics?.cost_micros ? 
+      cost: adGroup.metrics?.cost_micros ?
         Number(adGroup.metrics.cost_micros) / 1_000_000 : 0,
       conversions: adGroup.metrics?.conversions || 0,
       ctr: adGroup.metrics?.ctr || 0,
-      avgCpc: adGroup.metrics?.average_cpc ? 
+      avgCpc: adGroup.metrics?.average_cpc ?
         Number(adGroup.metrics.average_cpc) / 1_000_000 : 0,
       conversionRate: adGroup.metrics?.conversions_from_interactions_rate || 0,
-      costPerConversion: adGroup.metrics?.cost_per_conversion ? 
+      costPerConversion: adGroup.metrics?.cost_per_conversion ?
         Number(adGroup.metrics.cost_per_conversion) / 1_000_000 : 0,
     }
   }));
 }
 
 export async function getSearchTermsReport(params: z.infer<typeof getSearchTermsReportSchema>) {
-  const customer = createGoogleAdsClient();
-  
+  const customer = createGoogleAdsClient(params.customerId);
+
   let dateClause = '';
   if (params.dateRange === 'CUSTOM' && params.customDateRange) {
     dateClause = `segments.date BETWEEN '${params.customDateRange.startDate}' AND '${params.customDateRange.endDate}'`;
   } else {
     dateClause = `segments.date DURING ${params.dateRange}`;
   }
-  
+
   let whereClause = `WHERE ${dateClause}
     AND metrics.impressions >= ${params.minImpressions}`;
-  
+
   if (params.campaignId) {
     whereClause += ` AND campaign.id = ${params.campaignId}`;
   }
-  
+
   if (params.adGroupId) {
     whereClause += ` AND ad_group.id = ${params.adGroupId}`;
   }
-  
+
   const query = `
     SELECT
       search_term_view.search_term,
@@ -346,7 +350,7 @@ export async function getSearchTermsReport(params: z.infer<typeof getSearchTerms
   `;
 
   const searchTerms = await customer.query(query);
-  
+
   return searchTerms.map((term: any) => ({
     searchTerm: term.search_term_view.search_term,
     status: term.search_term_view.status,
@@ -361,16 +365,23 @@ export async function getSearchTermsReport(params: z.infer<typeof getSearchTerms
     metrics: {
       impressions: term.metrics?.impressions || 0,
       clicks: term.metrics?.clicks || 0,
-      cost: term.metrics?.cost_micros ? 
+      cost: term.metrics?.cost_micros ?
         Number(term.metrics.cost_micros) / 1_000_000 : 0,
       conversions: term.metrics?.conversions || 0,
       ctr: term.metrics?.ctr || 0,
-      avgCpc: term.metrics?.average_cpc ? 
+      avgCpc: term.metrics?.average_cpc ?
         Number(term.metrics.average_cpc) / 1_000_000 : 0,
       conversionRate: term.metrics?.conversions_from_interactions_rate || 0,
     }
   }));
 }
+
+const customerIdProp = {
+  customerId: {
+    type: 'string' as const,
+    description: 'Google Ads customer ID to target. If omitted, uses the default account.',
+  },
+};
 
 export const performanceTools: Tool[] = [
   {
@@ -379,10 +390,11 @@ export const performanceTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        dateRange: { 
+        ...customerIdProp,
+        dateRange: {
           type: 'string',
           enum: ['TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'LAST_14_DAYS', 'LAST_30_DAYS', 'THIS_MONTH', 'LAST_MONTH', 'THIS_QUARTER', 'LAST_QUARTER'],
-          description: 'Date range for metrics' 
+          description: 'Date range for metrics'
         },
         segmentByDate: { type: 'boolean', description: 'Segment results by date' },
       },
@@ -394,11 +406,12 @@ export const performanceTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: { type: 'string', description: 'Campaign ID' },
-        dateRange: { 
+        dateRange: {
           type: 'string',
           enum: ['TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'LAST_14_DAYS', 'LAST_30_DAYS', 'THIS_MONTH', 'LAST_MONTH'],
-          description: 'Date range for metrics' 
+          description: 'Date range for metrics'
         },
         segmentByDate: { type: 'boolean', description: 'Segment results by date' },
       },
@@ -411,12 +424,13 @@ export const performanceTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         adGroupId: { type: 'string', description: 'Ad group ID (optional)' },
         campaignId: { type: 'string', description: 'Filter by campaign ID (optional)' },
-        dateRange: { 
+        dateRange: {
           type: 'string',
           enum: ['TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'LAST_30_DAYS', 'THIS_MONTH', 'LAST_MONTH'],
-          description: 'Date range for metrics' 
+          description: 'Date range for metrics'
         },
         limit: { type: 'number', description: 'Maximum number of ad groups to return' },
       },
@@ -428,12 +442,13 @@ export const performanceTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: { type: 'string', description: 'Filter by campaign ID (optional)' },
         adGroupId: { type: 'string', description: 'Filter by ad group ID (optional)' },
-        dateRange: { 
+        dateRange: {
           type: 'string',
           enum: ['TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'LAST_30_DAYS', 'THIS_MONTH', 'LAST_MONTH', 'CUSTOM'],
-          description: 'Date range for report' 
+          description: 'Date range for report'
         },
         customDateRange: {
           type: 'object',

@@ -1,59 +1,100 @@
 import { z } from 'zod';
-import { createGoogleAdsClient } from '../google-ads-client.js';
+import { createGoogleAdsClient, createGoogleAdsApi } from '../google-ads-client.js';
+import { googleAdsConfig } from '../config.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 export const listAccessibleCustomersSchema = z.object({});
 
 export const getAccountHierarchySchema = z.object({
-  customerId: z.string().optional(),
-  loginCustomerId: z.string().optional(),
+  customerId: z.string().optional().describe('Manager account customer ID to query hierarchy from. Uses default if omitted.'),
 });
 
 export const getAccountInfoSchema = z.object({
-  customerId: z.string(),
+  customerId: z.string().describe('Google Ads customer ID to get info for.'),
 });
 
 export const listManagerAccountsSchema = z.object({
-  customerId: z.string().optional(),
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
 });
 
-export async function listAccessibleCustomers(args: z.infer<typeof listAccessibleCustomersSchema>) {
-  const client = createGoogleAdsClient();
-  
+/**
+ * List ALL accessible customer accounts under the MCC.
+ * Equivalent to meta-ads-cli `accounts` command.
+ * Queries customer_client from the manager account to discover all child accounts.
+ */
+export async function listAccessibleCustomers(_args: z.infer<typeof listAccessibleCustomersSchema>) {
+  // Use the MCC (login_customer_id) to discover all child accounts
+  const mccId = googleAdsConfig.loginCustomerId || googleAdsConfig.customerId;
+  const client = createGoogleAdsClient(mccId);
+
   try {
-    // google-ads-api doesn't have a direct listAccessibleCustomers method
-    // We'll use a query to get customer info instead
     const query = `
-      SELECT 
-        customer.id,
-        customer.descriptive_name,
-        customer.currency_code,
-        customer.time_zone
-      FROM customer
-      LIMIT 1
+      SELECT
+        customer_client.id,
+        customer_client.descriptive_name,
+        customer_client.currency_code,
+        customer_client.time_zone,
+        customer_client.manager,
+        customer_client.status,
+        customer_client.level
+      FROM customer_client
+      WHERE customer_client.level <= 1
+      ORDER BY customer_client.descriptive_name
     `;
-    
+
     const response = await client.query(query);
-    
+
     return {
+      mccId,
       customers: response.map(row => ({
-        id: row.customer?.id,
-        name: row.customer?.descriptive_name,
-        currencyCode: row.customer?.currency_code,
-        timeZone: row.customer?.time_zone,
+        id: String(row.customer_client?.id),
+        name: row.customer_client?.descriptive_name,
+        currencyCode: row.customer_client?.currency_code,
+        timeZone: row.customer_client?.time_zone,
+        isManager: row.customer_client?.manager,
+        status: row.customer_client?.status,
+        level: row.customer_client?.level,
       }))
     };
   } catch (error) {
-    throw new Error(`Failed to list accessible customers: ${error.message}`);
+    // Fallback: if MCC query fails, try the basic single-account approach
+    try {
+      const fallbackClient = createGoogleAdsClient();
+      const query = `
+        SELECT
+          customer.id,
+          customer.descriptive_name,
+          customer.currency_code,
+          customer.time_zone
+        FROM customer
+        LIMIT 1
+      `;
+      const response = await fallbackClient.query(query);
+      return {
+        mccId: null,
+        note: 'MCC query failed; showing only the configured default account.',
+        customers: response.map(row => ({
+          id: String(row.customer?.id),
+          name: row.customer?.descriptive_name,
+          currencyCode: row.customer?.currency_code,
+          timeZone: row.customer?.time_zone,
+          isManager: false,
+          status: 'ENABLED',
+          level: 0,
+        }))
+      };
+    } catch (fallbackError) {
+      throw new Error(`Failed to list accessible customers: ${error.message}`);
+    }
   }
 }
 
 export async function getAccountHierarchy(args: z.infer<typeof getAccountHierarchySchema>) {
-  const client = createGoogleAdsClient();
-  
+  const client = createGoogleAdsClient(args.customerId);
+
   try {
     const query = `
-      SELECT 
+      SELECT
         customer_client.client_customer,
         customer_client.level,
         customer_client.manager,
@@ -64,9 +105,9 @@ export async function getAccountHierarchy(args: z.infer<typeof getAccountHierarc
       FROM customer_client
       WHERE customer_client.level <= 2
     `;
-    
+
     const response = await client.query(query);
-    
+
     return response.map(row => ({
       id: row.customer_client?.id,
       descriptiveName: row.customer_client?.descriptive_name,
@@ -82,11 +123,11 @@ export async function getAccountHierarchy(args: z.infer<typeof getAccountHierarc
 }
 
 export async function getAccountInfo(args: z.infer<typeof getAccountInfoSchema>) {
-  const client = createGoogleAdsClient();
-  
+  const client = createGoogleAdsClient(args.customerId);
+
   try {
     const query = `
-      SELECT 
+      SELECT
         customer.id,
         customer.descriptive_name,
         customer.currency_code,
@@ -96,17 +137,16 @@ export async function getAccountInfo(args: z.infer<typeof getAccountInfoSchema>)
         customer.optimization_score,
         customer.pay_per_conversion_eligibility_failure_reasons
       FROM customer
-      WHERE customer.id = ${args.customerId}
     `;
-    
+
     const response = await client.query(query);
-    
+
     if (response.length === 0) {
       throw new Error('Customer not found');
     }
-    
+
     const customer = response[0].customer;
-    
+
     return {
       id: customer?.id,
       descriptiveName: customer?.descriptive_name,
@@ -123,20 +163,20 @@ export async function getAccountInfo(args: z.infer<typeof getAccountInfoSchema>)
 }
 
 export async function listManagerAccounts(args: z.infer<typeof listManagerAccountsSchema>) {
-  const client = createGoogleAdsClient();
-  
+  const client = createGoogleAdsClient(args.customerId);
+
   try {
     const query = `
-      SELECT 
+      SELECT
         customer_manager_link.manager_customer,
         customer_manager_link.client_customer,
         customer_manager_link.status
       FROM customer_manager_link
       WHERE customer_manager_link.status = 'ACTIVE'
     `;
-    
+
     const response = await client.query(query);
-    
+
     return response.map(row => ({
       managerCustomer: row.customer_manager_link?.manager_customer,
       clientCustomer: (row.customer_manager_link as any)?.client_customer,
@@ -147,10 +187,17 @@ export async function listManagerAccounts(args: z.infer<typeof listManagerAccoun
   }
 }
 
+const customerIdProp = {
+  customerId: {
+    type: 'string' as const,
+    description: 'Google Ads customer ID to target. If omitted, uses the default account.',
+  },
+};
+
 export const accountTools: Tool[] = [
   {
     name: 'list_accessible_customers',
-    description: 'List all Google Ads accounts accessible by the authenticated user',
+    description: 'List ALL Google Ads accounts accessible under the MCC (Manager account). Use this first to discover available account IDs, then pass customerId to other tools.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -162,14 +209,7 @@ export const accountTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        customerId: {
-          type: 'string',
-          description: 'Customer ID to get hierarchy for (optional)',
-        },
-        loginCustomerId: {
-          type: 'string',
-          description: 'Login customer ID for manager accounts (optional)',
-        },
+        ...customerIdProp,
       },
     },
   },
@@ -193,10 +233,7 @@ export const accountTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        customerId: {
-          type: 'string',
-          description: 'Customer ID to check manager relationships (optional)',
-        },
+        ...customerIdProp,
       },
     },
   },

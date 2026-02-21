@@ -3,6 +3,7 @@ import { createGoogleAdsClient } from '../google-ads-client.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 export const listCampaignsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   limit: z.number().optional().default(50),
   includeRemoved: z.boolean().optional().default(false),
   dateRange: z.enum([
@@ -27,10 +28,12 @@ export const listCampaignsSchema = z.object({
 });
 
 export const getCampaignSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string(),
 });
 
 export const createCampaignSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   name: z.string(),
   budget: z.number(),
   advertisingChannelType: z.enum(['SEARCH', 'DISPLAY', 'SHOPPING', 'VIDEO', 'MULTI_CHANNEL']),
@@ -38,6 +41,7 @@ export const createCampaignSchema = z.object({
 });
 
 export const updateCampaignSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   campaignId: z.string(),
   name: z.string().optional(),
   status: z.enum(['ENABLED', 'PAUSED', 'REMOVED']).optional(),
@@ -45,7 +49,7 @@ export const updateCampaignSchema = z.object({
 });
 
 export async function listCampaigns(params: z.infer<typeof listCampaignsSchema>) {
-  const customer = createGoogleAdsClient();
+  const customer = createGoogleAdsClient(params.customerId);
 
   // Build WHERE clause
   let whereConditions = [];
@@ -113,7 +117,7 @@ export async function listCampaigns(params: z.infer<typeof listCampaignsSchema>)
 }
 
 export async function getCampaign(params: z.infer<typeof getCampaignSchema>) {
-  const customer = createGoogleAdsClient();
+  const customer = createGoogleAdsClient(params.customerId);
 
   const query = `
     SELECT
@@ -169,7 +173,7 @@ export async function getCampaign(params: z.infer<typeof getCampaignSchema>) {
 }
 
 export async function createCampaign(params: z.infer<typeof createCampaignSchema>) {
-  const customer = createGoogleAdsClient();
+  const customer = createGoogleAdsClient(params.customerId);
 
   // v23 API: create() expects an array of resource objects
   const budgetResponse = await customer.campaignBudgets.create([{
@@ -207,7 +211,7 @@ export async function createCampaign(params: z.infer<typeof createCampaignSchema
 }
 
 export async function updateCampaign(params: z.infer<typeof updateCampaignSchema>) {
-  const customer = createGoogleAdsClient();
+  const customer = createGoogleAdsClient(params.customerId);
 
   if (params.budget !== undefined) {
     const campaignQuery = `
@@ -247,6 +251,13 @@ export async function updateCampaign(params: z.infer<typeof updateCampaignSchema
   return { success: true, campaignId: params.campaignId };
 }
 
+const customerIdProp = {
+  customerId: {
+    type: 'string' as const,
+    description: 'Google Ads customer ID to target. If omitted, uses the default account.',
+  },
+};
+
 export const campaignTools: Tool[] = [
   {
     name: 'list_campaigns',
@@ -254,6 +265,7 @@ export const campaignTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         limit: { type: 'number', description: 'Maximum number of campaigns to return' },
         includeRemoved: { type: 'boolean', description: 'Include removed campaigns' },
         dateRange: {
@@ -279,6 +291,7 @@ export const campaignTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: { type: 'string', description: 'Campaign ID' },
       },
       required: ['campaignId'],
@@ -290,6 +303,7 @@ export const campaignTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         name: { type: 'string', description: 'Campaign name' },
         budget: { type: 'number', description: 'Daily budget in account currency' },
         advertisingChannelType: {
@@ -312,6 +326,7 @@ export const campaignTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         campaignId: { type: 'string', description: 'Campaign ID' },
         name: { type: 'string', description: 'New campaign name' },
         status: {

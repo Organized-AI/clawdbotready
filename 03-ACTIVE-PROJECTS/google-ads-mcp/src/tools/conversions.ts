@@ -3,10 +3,12 @@ import { createGoogleAdsClient } from '../google-ads-client.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 export const listConversionActionsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   includeRemoved: z.boolean().optional().default(false),
 });
 
 export const createConversionActionSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   name: z.string(),
   category: z.enum([
     'PURCHASE',
@@ -29,6 +31,7 @@ export const createConversionActionSchema = z.object({
 });
 
 export const updateConversionActionSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   conversionActionId: z.string(),
   name: z.string().optional(),
   status: z.enum(['ENABLED', 'REMOVED', 'HIDDEN']).optional(),
@@ -43,6 +46,7 @@ export const updateConversionActionSchema = z.object({
 });
 
 export const getConversionStatsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   conversionActionId: z.string().optional(),
   dateRange: z.enum([
     'TODAY',
@@ -62,7 +66,7 @@ function microsToNumber(micros: string | number | undefined): number | undefined
 }
 
 export async function listConversionActions(args: z.infer<typeof listConversionActionsSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
     let query = `
@@ -114,7 +118,7 @@ export async function listConversionActions(args: z.infer<typeof listConversionA
 }
 
 export async function createConversionAction(args: z.infer<typeof createConversionActionSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
     const conversionAction: any = {
@@ -151,12 +155,12 @@ export async function createConversionAction(args: z.infer<typeof createConversi
 }
 
 export async function updateConversionAction(args: z.infer<typeof updateConversionActionSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
-    const customerId = client.credentials.customer_id;
+    const cid = client.credentials.customer_id;
     const updateObject: any = {
-      resource_name: `customers/${customerId}/conversionActions/${args.conversionActionId}`,
+      resource_name: `customers/${cid}/conversionActions/${args.conversionActionId}`,
     };
 
     if (args.name !== undefined) updateObject.name = args.name;
@@ -189,7 +193,7 @@ export async function updateConversionAction(args: z.infer<typeof updateConversi
 }
 
 export async function getConversionStats(args: z.infer<typeof getConversionStatsSchema>) {
-  const client = createGoogleAdsClient();
+  const client = createGoogleAdsClient(args.customerId);
 
   try {
     const dateRangeClause = args.dateRange === 'ALL_TIME'
@@ -272,6 +276,13 @@ export async function getConversionStats(args: z.infer<typeof getConversionStats
   }
 }
 
+const customerIdProp = {
+  customerId: {
+    type: 'string' as const,
+    description: 'Google Ads customer ID to target. If omitted, uses the default account.',
+  },
+};
+
 export const conversionTools: Tool[] = [
   {
     name: 'list_conversion_actions',
@@ -279,6 +290,7 @@ export const conversionTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         includeRemoved: {
           type: 'boolean',
           description: 'Include removed conversion actions',
@@ -292,6 +304,7 @@ export const conversionTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         name: {
           type: 'string',
           description: 'Name of the conversion action',
@@ -351,6 +364,7 @@ export const conversionTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         conversionActionId: {
           type: 'string',
           description: 'ID of the conversion action to update',
@@ -404,6 +418,7 @@ export const conversionTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         conversionActionId: {
           type: 'string',
           description: 'Filter by specific conversion action ID (optional)',

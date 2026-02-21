@@ -3,13 +3,14 @@ import { createGoogleAdsClient } from '../google-ads-client.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 export const getTopBottomKeywordsSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   metric: z.enum(['COST', 'CLICKS', 'CONVERSIONS', 'CTR', 'CONVERSION_RATE', 'CPC', 'QUALITY_SCORE']),
   dateRange: z.enum([
-    'TODAY', 
-    'YESTERDAY', 
-    'LAST_7_DAYS', 
-    'LAST_30_DAYS', 
-    'THIS_MONTH', 
+    'TODAY',
+    'YESTERDAY',
+    'LAST_7_DAYS',
+    'LAST_30_DAYS',
+    'THIS_MONTH',
     'LAST_MONTH'
   ]).optional().default('LAST_30_DAYS'),
   topCount: z.number().optional().default(20),
@@ -20,9 +21,10 @@ export const getTopBottomKeywordsSchema = z.object({
 });
 
 export const getKeywordOpportunitiesSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   dateRange: z.enum([
-    'LAST_7_DAYS', 
-    'LAST_30_DAYS', 
+    'LAST_7_DAYS',
+    'LAST_30_DAYS',
     'LAST_90_DAYS'
   ]).optional().default('LAST_30_DAYS'),
   minImpressions: z.number().optional().default(100),
@@ -31,12 +33,13 @@ export const getKeywordOpportunitiesSchema = z.object({
 });
 
 export const getCampaignComparisonSchema = z.object({
+  customerId: z.string().optional().describe('Google Ads customer ID. Uses default account if omitted.'),
   dateRange: z.enum([
-    'TODAY', 
-    'YESTERDAY', 
-    'LAST_7_DAYS', 
-    'LAST_30_DAYS', 
-    'THIS_MONTH', 
+    'TODAY',
+    'YESTERDAY',
+    'LAST_7_DAYS',
+    'LAST_30_DAYS',
+    'THIS_MONTH',
     'LAST_MONTH'
   ]).optional().default('LAST_30_DAYS'),
   metric: z.enum(['COST', 'CLICKS', 'CONVERSIONS', 'ROAS', 'CPA']).optional().default('CONVERSIONS'),
@@ -49,43 +52,36 @@ function microsToNumber(micros: string | number | undefined): number | undefined
 }
 
 export async function getTopBottomKeywords(args: z.infer<typeof getTopBottomKeywordsSchema>) {
-  const client = createGoogleAdsClient();
-  
+  const client = createGoogleAdsClient(args.customerId);
+
   try {
     const dateRangeClause = ` DURING ${args.dateRange}`;
-    
+
     let orderByField = 'metrics.cost_micros';
-    let selectField = 'cost';
-    
+
     switch (args.metric) {
       case 'CLICKS':
         orderByField = 'metrics.clicks';
-        selectField = 'clicks';
         break;
       case 'CONVERSIONS':
         orderByField = 'metrics.conversions';
-        selectField = 'conversions';
         break;
       case 'CTR':
         orderByField = 'metrics.ctr';
-        selectField = 'ctr';
         break;
       case 'CONVERSION_RATE':
         orderByField = 'metrics.conversions_from_interactions_rate';
-        selectField = 'conversionRate';
         break;
       case 'CPC':
         orderByField = 'metrics.average_cpc';
-        selectField = 'averageCpc';
         break;
       case 'QUALITY_SCORE':
         orderByField = 'ad_group_criterion.quality_info.quality_score';
-        selectField = 'qualityScore';
         break;
     }
-    
+
     let baseQuery = `
-      SELECT 
+      SELECT
         ad_group_criterion.keyword.text,
         ad_group_criterion.keyword.match_type,
         ad_group_criterion.status,
@@ -104,38 +100,38 @@ export async function getTopBottomKeywords(args: z.infer<typeof getTopBottomKeyw
         metrics.cost_per_conversion
       FROM keyword_view
     `;
-    
+
     const conditions = [];
-    
+
     if (args.campaignId) {
       conditions.push(`campaign.id = ${args.campaignId}`);
     }
-    
+
     if (args.adGroupId) {
       conditions.push(`ad_group.id = ${args.adGroupId}`);
     }
-    
+
     if (!args.includeNegative) {
       conditions.push(`ad_group_criterion.negative = false`);
     }
-    
+
     conditions.push(`ad_group_criterion.status != 'REMOVED'`);
-    
+
     if (conditions.length > 0) {
       baseQuery += ` WHERE ${conditions.join(' AND ')}`;
     }
-    
+
     baseQuery += dateRangeClause;
-    
+
     // Get top performers
     const topQuery = baseQuery + ` ORDER BY ${orderByField} DESC LIMIT ${args.topCount}`;
     const topResponse = await client.query(topQuery);
-    
+
     // Get bottom performers (excluding zero values for most metrics)
     let bottomCondition = args.metric === 'QUALITY_SCORE' ? '' : ` AND ${orderByField} > 0`;
     const bottomQuery = baseQuery + bottomCondition + ` ORDER BY ${orderByField} ASC LIMIT ${args.bottomCount}`;
     const bottomResponse = await client.query(bottomQuery);
-    
+
     const formatKeyword = (row: any) => ({
       keyword: row.ad_group_criterion?.keyword?.text,
       matchType: row.ad_group_criterion?.keyword?.match_type,
@@ -156,7 +152,7 @@ export async function getTopBottomKeywords(args: z.infer<typeof getTopBottomKeyw
         costPerConversion: microsToNumber(row.metrics?.cost_per_conversion) || 0,
       }
     });
-    
+
     return {
       metric: args.metric,
       dateRange: args.dateRange,
@@ -169,14 +165,14 @@ export async function getTopBottomKeywords(args: z.infer<typeof getTopBottomKeyw
 }
 
 export async function getKeywordOpportunities(args: z.infer<typeof getKeywordOpportunitiesSchema>) {
-  const client = createGoogleAdsClient();
-  
+  const client = createGoogleAdsClient(args.customerId);
+
   try {
     const dateRangeClause = ` DURING ${args.dateRange}`;
-    
+
     // Find high-performing search terms that aren't keywords yet
     const searchTermsQuery = `
-      SELECT 
+      SELECT
         segments.search_term_match_type,
         search_term_view.search_term,
         campaign.name,
@@ -198,12 +194,12 @@ export async function getKeywordOpportunities(args: z.infer<typeof getKeywordOpp
       ORDER BY metrics.conversions DESC
       LIMIT 50
     `;
-    
+
     const searchTermsResponse = await client.query(searchTermsQuery);
-    
+
     // Find underperforming keywords that could be paused
     const underperformingQuery = `
-      SELECT 
+      SELECT
         ad_group_criterion.keyword.text,
         ad_group_criterion.keyword.match_type,
         ad_group_criterion.quality_info.quality_score,
@@ -226,9 +222,9 @@ export async function getKeywordOpportunities(args: z.infer<typeof getKeywordOpp
       ORDER BY metrics.cost_micros DESC
       LIMIT 30
     `;
-    
+
     const underperformingResponse = await client.query(underperformingQuery);
-    
+
     return {
       dateRange: args.dateRange,
       newKeywordOpportunities: searchTermsResponse.map(row => ({
@@ -269,13 +265,13 @@ export async function getKeywordOpportunities(args: z.infer<typeof getKeywordOpp
 }
 
 export async function getCampaignComparison(args: z.infer<typeof getCampaignComparisonSchema>) {
-  const client = createGoogleAdsClient();
-  
+  const client = createGoogleAdsClient(args.customerId);
+
   try {
     const dateRangeClause = ` DURING ${args.dateRange}`;
-    
+
     const query = `
-      SELECT 
+      SELECT
         campaign.id,
         campaign.name,
         campaign.status,
@@ -298,14 +294,14 @@ export async function getCampaignComparison(args: z.infer<typeof getCampaignComp
       ${dateRangeClause}
       ORDER BY metrics.${args.metric === 'ROAS' ? 'conversions_value' : args.metric === 'CPA' ? 'cost_per_conversion' : args.metric.toLowerCase()} DESC
     `;
-    
+
     const response = await client.query(query);
-    
+
     const campaigns = response.map(row => {
       const cost = microsToNumber(row.metrics?.cost_micros) || 0;
       const revenue = microsToNumber(row.metrics?.conversions_value) || 0;
       const conversions = row.metrics?.conversions || 0;
-      
+
       return {
         id: row.campaign?.id,
         name: row.campaign?.name,
@@ -329,7 +325,7 @@ export async function getCampaignComparison(args: z.infer<typeof getCampaignComp
         }
       };
     });
-    
+
     // Calculate totals
     const totals = campaigns.reduce((acc, campaign) => ({
       clicks: acc.clicks + campaign.metrics.clicks,
@@ -344,12 +340,12 @@ export async function getCampaignComparison(args: z.infer<typeof getCampaignComp
       conversions: 0,
       revenue: 0,
     });
-    
+
     totals['ctr'] = totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
     totals['conversionRate'] = totals.clicks > 0 ? (totals.conversions / totals.clicks) * 100 : 0;
     totals['cpa'] = totals.conversions > 0 ? totals.cost / totals.conversions : 0;
     totals['roas'] = totals.cost > 0 ? totals.revenue / totals.cost : 0;
-    
+
     return {
       dateRange: args.dateRange,
       sortedBy: args.metric,
@@ -361,6 +357,13 @@ export async function getCampaignComparison(args: z.infer<typeof getCampaignComp
   }
 }
 
+const customerIdProp = {
+  customerId: {
+    type: 'string' as const,
+    description: 'Google Ads customer ID to target. If omitted, uses the default account.',
+  },
+};
+
 export const analyticsTools: Tool[] = [
   {
     name: 'get_top_bottom_keywords',
@@ -368,6 +371,7 @@ export const analyticsTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         metric: {
           type: 'string',
           enum: ['COST', 'CLICKS', 'CONVERSIONS', 'CTR', 'CONVERSION_RATE', 'CPC', 'QUALITY_SCORE'],
@@ -408,6 +412,7 @@ export const analyticsTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         dateRange: {
           type: 'string',
           enum: ['LAST_7_DAYS', 'LAST_30_DAYS', 'LAST_90_DAYS'],
@@ -434,6 +439,7 @@ export const analyticsTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...customerIdProp,
         dateRange: {
           type: 'string',
           enum: ['TODAY', 'YESTERDAY', 'LAST_7_DAYS', 'LAST_30_DAYS', 'THIS_MONTH', 'LAST_MONTH'],
