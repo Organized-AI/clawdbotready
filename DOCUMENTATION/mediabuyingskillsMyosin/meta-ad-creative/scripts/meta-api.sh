@@ -20,6 +20,34 @@
 
 set -euo pipefail
 
+# --- Help (before env var checks so it works without credentials) ---
+if [ "${1:-}" = "help" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ] || [ -z "${1:-}" ]; then
+  echo "meta-api.sh — Meta Marketing API Helper"
+  echo ""
+  echo "Commands:"
+  echo "  verify                        Check account, page, pixel access"
+  echo "  search-interests <query>      Search targeting interests"
+  echo "  search-behaviors <query>      Search targeting behaviors"
+  echo "  search-locations <query>      Search geo locations"
+  echo "  estimate-audience <json>      Delivery estimate for targeting spec"
+  echo "  list-audiences                List custom audiences"
+  echo "  list-campaigns                List campaigns"
+  echo "  list-images                   List uploaded images"
+  echo "  create <type> <json>          Create campaign|adset|adcreative|ad"
+  echo "  status <id>                   Check object status"
+  echo "  activate <id>                 Set status to ACTIVE"
+  echo "  preview <ad_id>               Get ad preview link"
+  echo "  upload-image <path>           Upload image, return hash"
+  echo "  upload-video <path>           Upload video, poll until ready"
+  echo ""
+  echo "Environment:"
+  echo "  META_ACCESS_TOKEN   (required) System User token"
+  echo "  META_AD_ACCOUNT_ID  (required) Ad account ID (without act_ prefix)"
+  echo "  META_PAGE_ID        (optional) Facebook Page ID"
+  echo "  META_PIXEL_ID       (optional) Pixel ID for conversion tracking"
+  exit 0
+fi
+
 # --- Config ---
 API_BASE="https://graph.facebook.com/v21.0"
 TOKEN="${META_ACCESS_TOKEN:?ERROR: META_ACCESS_TOKEN not set}"
@@ -199,29 +227,5 @@ case "$COMMAND" in
   preview)          cmd_preview "$@" ;;
   upload-image)     cmd_upload_image "$@" ;;
   upload-video)     cmd_upload_video "$@" ;;
-  help|*)
-    echo "meta-api.sh — Meta Marketing API Helper"
-    echo ""
-    echo "Commands:"
-    echo "  verify                        Check account, page, pixel access"
-    echo "  search-interests <query>      Search targeting interests"
-    echo "  search-behaviors <query>      Search targeting behaviors"
-    echo "  search-locations <query>      Search geo locations"
-    echo "  estimate-audience <json>      Delivery estimate for targeting spec"
-    echo "  list-audiences                List custom audiences"
-    echo "  list-campaigns                List campaigns"
-    echo "  list-images                   List uploaded images"
-    echo "  create <type> <json>          Create campaign|adset|adcreative|ad"
-    echo "  status <id>                   Check object status"
-    echo "  activate <id>                 Set status to ACTIVE"
-    echo "  preview <ad_id>               Get ad preview link"
-    echo "  upload-image <path>           Upload image, return hash"
-    echo "  upload-video <path>           Upload video, poll until ready"
-    echo ""
-    echo "Environment:"
-    echo "  META_ACCESS_TOKEN   (required) System User token"
-    echo "  META_AD_ACCOUNT_ID  (required) Ad account ID (without act_ prefix)"
-    echo "  META_PAGE_ID        (optional) Facebook Page ID"
-    echo "  META_PIXEL_ID       (optional) Pixel ID for conversion tracking"
-    ;;
+  *) echo "Unknown command: $COMMAND. Run with 'help' for usage." >&2; exit 1 ;;
 esac
