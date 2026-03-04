@@ -1,0 +1,149 @@
+---
+title: OpenClaw Audit Suite — Full Architecture
+---
+graph TB
+    subgraph ENTRY["🔗 Entry Point"]
+        LP["Leadsie Connect Page<br/>app.leadsie.com/connect/openclaw"]
+        WH["Webhook Handler<br/>POST /webhooks/leadsie"]
+        API["Leadsie API Client<br/>POST checkUserStatus"]
+    end
+
+    subgraph LEADSIE_NATIVE["📡 Leadsie-Native Connectors"]
+        META_C["Meta Ads<br/>Ad Accounts, Pages, Pixels"]
+        GADS_C["Google Ads<br/>Campaigns, Keywords"]
+        GA_C["Google Analytics<br/>GA4 Properties"]
+        GTM_C["Google Tag Manager<br/>Containers, Tags"]
+        SHOP_C["Shopify<br/>Store, Products, Orders"]
+    end
+
+    subgraph OAUTH_CUSTOM["🔐 OAuth Connectors"]
+        STRIPE_C["Stripe<br/>Payments, Subscriptions"]
+        GMAIL_C["Gmail<br/>Metadata Only"]
+        SLACK_C["Slack<br/>Channels, Integrations"]
+        GDRIVE_C["Google Drive<br/>Files, Permissions"]
+        GDOCS_C["Google Docs<br/>Documents, SOPs"]
+        WA_C["WhatsApp Business<br/>Templates, Conversations"]
+    end
+
+    subgraph ENGINES["⚙️ Audit Engines"]
+        direction TB
+        subgraph AD_ENGINES["Ad Platform Engines"]
+            META_E["Meta Ads Engine<br/>Wasted spend, audience overlap,<br/>creative fatigue, retargeting gaps"]
+            GADS_E["Google Ads Engine<br/>QS gaps, negative keywords,<br/>PMax migration, RLSA"]
+            GA_E["Analytics Engine<br/>Broken events, attribution gaps,<br/>audience leakage"]
+            GTM_E["GTM Engine<br/>Redundant tags, consent violations,<br/>sGTM migration"]
+            SHOP_E["Shopify Engine<br/>Abandoned carts, dead inventory,<br/>upsell gaps, pricing"]
+        end
+        subgraph BIZ_ENGINES["Business Platform Engines"]
+            STRIPE_E["Stripe Engine<br/>Failed payments, churn,<br/>pricing optimization"]
+            GMAIL_E["Gmail Engine<br/>Response times, follow-up gaps,<br/>template stagnation"]
+            SLACK_E["Slack Engine<br/>Tool sprawl, bottlenecks,<br/>automation potential"]
+            GDRIVE_E["Drive Engine<br/>Oversharing, storage waste,<br/>SOP gaps"]
+            GDOCS_E["Docs Engine<br/>Outdated SOPs, brand drift,<br/>content repurposing"]
+            WA_E["WhatsApp Engine<br/>Template performance,<br/>automation gaps"]
+        end
+        CROSS["Cross-Platform Engine<br/>Data silos, attribution gaps,<br/>process disconnects"]
+    end
+
+    subgraph SCORING["📊 Opportunity Scoring"]
+        IMPACT["Revenue Impact Calculator<br/>Low / Mid / High USD estimates"]
+        EFFORT["Effort Estimator<br/>Quick Win / Moderate / Significant"]
+        RANK["Priority Ranker<br/>Composite ROI scoring"]
+        AGG["Aggregator<br/>Dedup + total portfolio"]
+        MAPPER["Agent Mapper<br/>Finding → OpenClaw Agent"]
+    end
+
+    subgraph OUTPUT["🎯 Output Layer"]
+        DASH["React Dashboard<br/>Interactive audit results"]
+        PDF["PDF Report<br/>Executive summary + details"]
+        PROP["Agent Proposal Builder<br/>Custom OpenClaw deployment plan"]
+        ROI["ROI Projection<br/>Month-by-month breakeven"]
+        USECASE["Use Case Generator<br/>Personalized narratives"]
+        CRM["Sales Handoff<br/>CRM webhook push"]
+    end
+
+    subgraph OMNI["🤖 OpenClaw Agents (Existing)"]
+        CO["Campaign Orchestrator<br/>80% ready"]
+        AE["Attribution Engine<br/>50% ready"]
+        AR["Analytics & Reporting<br/>45% ready"]
+        PC["Platform Connector<br/>40% ready"]
+        EI["Event Ingestion<br/>30% ready"]
+        BO["Budget Optimizer<br/>25% ready"]
+        CG["Compliance Guardian<br/>20% ready"]
+    end
+
+    %% Flow: Entry to Connectors
+    LP -->|"Client grants access"| WH
+    WH -->|"Trigger audit pipeline"| API
+    API --> LEADSIE_NATIVE
+    API --> OAUTH_CUSTOM
+
+    %% Connectors to Engines
+    META_C --> META_E
+    GADS_C --> GADS_E
+    GA_C --> GA_E
+    GTM_C --> GTM_E
+    SHOP_C --> SHOP_E
+    STRIPE_C --> STRIPE_E
+    GMAIL_C --> GMAIL_E
+    SLACK_C --> SLACK_E
+    GDRIVE_C --> GDRIVE_E
+    GDOCS_C --> GDOCS_E
+    WA_C --> WA_E
+
+    %% Cross-platform
+    AD_ENGINES --> CROSS
+    BIZ_ENGINES --> CROSS
+
+    %% Engines to Scoring
+    META_E --> IMPACT
+    GADS_E --> IMPACT
+    GA_E --> IMPACT
+    GTM_E --> IMPACT
+    SHOP_E --> IMPACT
+    STRIPE_E --> IMPACT
+    GMAIL_E --> IMPACT
+    SLACK_E --> IMPACT
+    GDRIVE_E --> IMPACT
+    GDOCS_E --> IMPACT
+    WA_E --> IMPACT
+    CROSS --> IMPACT
+
+    IMPACT --> EFFORT
+    EFFORT --> RANK
+    RANK --> AGG
+    AGG --> MAPPER
+
+    %% Scoring to Output
+    MAPPER --> DASH
+    MAPPER --> PDF
+    MAPPER --> PROP
+    PROP --> ROI
+    PROP --> USECASE
+    PROP --> CRM
+
+    %% Output to Agents
+    PROP -.->|"Quick Wins"| CO
+    PROP -.->|"Attribution fixes"| AE
+    PROP -.->|"Dashboard setup"| AR
+    PROP -.->|"New connections"| PC
+    PROP -.->|"Tracking fixes"| EI
+    PROP -.->|"Budget reallocation"| BO
+    PROP -.->|"Compliance fixes"| CG
+
+    %% Styling
+    classDef entry fill:#1a1a2e,stroke:#00d4aa,stroke-width:2px,color:#fff
+    classDef leadsie fill:#16213e,stroke:#00d4aa,stroke-width:1px,color:#fff
+    classDef oauth fill:#16213e,stroke:#e94560,stroke-width:1px,color:#fff
+    classDef engine fill:#0f3460,stroke:#e94560,stroke-width:1px,color:#fff
+    classDef scoring fill:#533483,stroke:#00d4aa,stroke-width:1px,color:#fff
+    classDef output fill:#1a1a2e,stroke:#ffd700,stroke-width:2px,color:#fff
+    classDef agent fill:#0a3d62,stroke:#00d4aa,stroke-width:2px,color:#fff
+
+    class LP,WH,API entry
+    class META_C,GADS_C,GA_C,GTM_C,SHOP_C leadsie
+    class STRIPE_C,GMAIL_C,SLACK_C,GDRIVE_C,GDOCS_C,WA_C oauth
+    class META_E,GADS_E,GA_E,GTM_E,SHOP_E,STRIPE_E,GMAIL_E,SLACK_E,GDRIVE_E,GDOCS_E,WA_E,CROSS engine
+    class IMPACT,EFFORT,RANK,AGG,MAPPER scoring
+    class DASH,PDF,PROP,ROI,USECASE,CRM output
+    class CO,AE,AR,PC,EI,BO,CG agent

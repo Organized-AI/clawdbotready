@@ -1,0 +1,72 @@
+sequenceDiagram
+    participant W as ⌚ Apple Watch
+    participant I as 📱 iPhone
+    participant S as 🔷 Fleet Status Fast v2
+    participant T as 🔒 Tailscale VPN
+    participant F as 🛡️ Fleet Control API<br/>(port 3847)
+    participant G as 🦞 OpenClaw Gateway<br/>(port 18789)
+    participant TG as 💬 Telegram<br/>@SAMyosin_bot
+
+    Note over W,TG: === Quick Status Flow ===
+    
+    W->>S: Tap "Quick Status"
+    S->>T: GET /fleet/health<br/>Authorization: Bearer &lt;token&gt;
+    T->>F: Route via 100.66.145.48
+    F->>F: Validate token
+    F->>G: HTTP GET http://127.0.0.1:18789
+    G-->>F: 200 OK (45ms)
+    F->>F: Check PID via gateway.pid
+    F-->>T: {status: "healthy", responseTime: 45, pid: 12345}
+    T-->>S: JSON Response
+    S-->>W: 🟢 "Gateway Healthy (45ms)"
+
+    Note over W,TG: === Remote Restart Flow ===
+
+    I->>S: Tap "Restart Gateway"
+    S->>I: ⚠️ "Restart OpenClaw Gateway?"
+    I->>S: Confirm "Restart"
+    S->>T: POST /fleet/restart<br/>Authorization: Bearer &lt;token&gt;
+    T->>F: Route via 100.66.145.48
+    F->>F: Validate token
+    F->>F: Check rate limit (5/hr)
+    
+    Note over F,G: Method 1: SIGUSR1 (preferred)
+    F->>G: kill -SIGUSR1 &lt;PID&gt;
+    G->>G: In-process restart
+    
+    F->>F: Wait 5s...
+    F->>G: Health check: GET 127.0.0.1:18789
+    G-->>F: 200 OK ✅
+    
+    F->>TG: 🔔 "Gateway Restart Alert<br/>Trigger: manual (API)<br/>Method: SIGUSR1<br/>Result: ✅ Healthy"
+    F-->>T: {success: true, method: "SIGUSR1"}
+    T-->>S: JSON Response
+    S-->>I: ✅ "Gateway restarted successfully"
+
+    Note over W,TG: === Watchdog Auto-Recovery Flow ===
+
+    loop Every 60 seconds
+        Note over F: Watchdog (launchd timer)
+        F->>G: Health check
+        G-->>F: ❌ Timeout / Error
+        F->>F: Failure count: 1
+        F->>G: Health check (next cycle)
+        G-->>F: ❌ Timeout / Error
+        F->>F: Failure count: 2 → AUTO RESTART
+        F->>G: kill -SIGUSR1 &lt;PID&gt;
+        G->>G: Restart
+        F->>G: Verify health
+        G-->>F: 200 OK ✅
+        F->>TG: 🔴 "Auto-Restart Alert<br/>Trigger: watchdog<br/>2 consecutive failures"
+    end
+
+    Note over W,TG: === Telegram Restart Flow ===
+
+    TG->>F: /restart (from authorized user)
+    F->>F: Validate Telegram user ID
+    F->>TG: ⏳ "Restarting gateway..."
+    F->>G: kill -SIGUSR1 &lt;PID&gt;
+    G->>G: Restart
+    F->>G: Verify health
+    G-->>F: 200 OK ✅
+    F->>TG: ✅ "Gateway restarted successfully"

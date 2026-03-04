@@ -1,0 +1,69 @@
+---
+title: OpenClaw Audit Suite — Data Flow (Leadsie → Dashboard)
+---
+sequenceDiagram
+    participant Client as Prospect
+    participant Leadsie as Leadsie Connect
+    participant WH as Webhook Handler
+    participant TV as Token Vault
+    participant Adapters as Platform Adapters
+    participant Engines as Audit Engines
+    participant Scorer as Opportunity Scorer
+    participant Dash as React Dashboard
+    participant Sales as Sales Handoff
+
+    Client->>Leadsie: Clicks connect link
+    Note over Leadsie: Grants access to<br/>Meta, Google, Shopify,<br/>Stripe, Slack, etc.
+
+    Leadsie->>WH: POST webhook<br/>{status: SUCCESS, assets: [...]}
+    WH->>WH: Validate payload
+    WH->>TV: Store OAuth tokens<br/>(AES-256-GCM encrypted)
+
+    par Pull data from all platforms
+        WH->>Adapters: Meta Ads pull (90 days)
+        WH->>Adapters: Google Ads pull (90 days)
+        WH->>Adapters: GA4 pull (90 days)
+        WH->>Adapters: GTM pull (containers)
+        WH->>Adapters: Shopify pull (90 days)
+        WH->>Adapters: Stripe pull (90 days)
+        WH->>Adapters: Gmail metadata pull
+        WH->>Adapters: Slack metadata pull
+        WH->>Adapters: Drive inventory pull
+        WH->>Adapters: Docs inventory pull
+        WH->>Adapters: WhatsApp metrics pull
+    end
+
+    Note over Adapters: Promise.allSettled<br/>Partial failures OK
+
+    par Run audit engines
+        Adapters->>Engines: Meta Ads audit
+        Adapters->>Engines: Google Ads audit
+        Adapters->>Engines: GA4 audit
+        Adapters->>Engines: GTM audit
+        Adapters->>Engines: Shopify audit
+        Adapters->>Engines: Stripe audit
+        Adapters->>Engines: Gmail audit
+        Adapters->>Engines: Slack audit
+        Adapters->>Engines: Drive audit
+        Adapters->>Engines: Docs audit
+        Adapters->>Engines: WhatsApp audit
+    end
+
+    Engines->>Engines: Cross-platform analysis
+
+    Engines->>Scorer: All findings[]
+    Scorer->>Scorer: Calculate revenue impact
+    Scorer->>Scorer: Estimate effort
+    Scorer->>Scorer: Rank by composite ROI
+    Scorer->>Scorer: Map to OpenClaw agents
+    Scorer->>Scorer: Generate total portfolio
+
+    Scorer->>Dash: AuditReport via WebSocket
+    Note over Dash: Hero: $X-$Y opportunity<br/>Platform scores<br/>Quick wins<br/>Agent proposals
+
+    Dash->>Sales: Generate proposal
+    Sales->>Sales: ROI projection
+    Sales->>Sales: Use case narratives
+    Sales-->>Client: Shareable link + PDF
+
+    Note over Client: "Now I know exactly<br/>what OpenClaw can do<br/>for MY business"

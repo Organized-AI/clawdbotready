@@ -1,0 +1,116 @@
+graph TB
+    subgraph DEVICES["📱 Apple Devices (Tailscale Network)"]
+        direction TB
+        WATCH["⌚ Apple Watch<br/>Quick Status / Restart"]
+        IPHONE["📱 iPhone<br/>Full Menu: Status / Restart / Info / History"]
+        MAC["💻 MacBook Pro<br/>Full Menu + Terminal Access"]
+        
+        WATCH --> SHORTCUT
+        IPHONE --> SHORTCUT
+        MAC --> SHORTCUT
+        
+        SHORTCUT["🔷 Fleet Status Fast v2<br/>Apple Shortcut"]
+    end
+
+    subgraph ACTIONS["Shortcut Actions"]
+        direction LR
+        A1["🟢 Quick Status<br/>GET /fleet/health"]
+        A2["🔄 Restart Gateway<br/>POST /fleet/restart"]
+        A3["📊 System Info<br/>GET /fleet/info"]
+        A4["📋 Restart History<br/>GET /fleet/history"]
+    end
+
+    SHORTCUT --> A1
+    SHORTCUT --> A2
+    SHORTCUT --> A3
+    SHORTCUT --> A4
+
+    subgraph TAILSCALE["🔒 Tailscale Mesh VPN (Encrypted)"]
+        direction TB
+        TS_ROUTE["Tailscale Route<br/>100.66.145.48:3847"]
+    end
+
+    A1 --> TS_ROUTE
+    A2 --> TS_ROUTE
+    A3 --> TS_ROUTE
+    A4 --> TS_ROUTE
+
+    subgraph MACMINI["🖥️ openclaws-mac-mini (100.66.145.48)"]
+        direction TB
+        
+        subgraph API["Fleet Control API (port 3847)"]
+            direction TB
+            AUTH["🔐 Bearer Token Auth<br/>64-char from Keychain"]
+            RATE["⏱️ Rate Limiter<br/>5 restarts/hour"]
+            LOGGER["📝 Request Logger<br/>/tmp/fleet-control-api.log"]
+            
+            AUTH --> ROUTER["Router"]
+            ROUTER --> RATE
+            ROUTER --> LOGGER
+        end
+
+        subgraph GATEWAY["OpenClaw Gateway (port 18789)"]
+            direction TB
+            GW_PROC["Gateway Process<br/>PID from ~/.openclaw/gateway.pid"]
+            GW_WS["WebSocket RPC"]
+            GW_UI["Control UI"]
+        end
+
+        subgraph WATCHDOG["🐕 Watchdog (launchd timer)"]
+            direction TB
+            WD_CHECK["Health Check<br/>Every 60 seconds"]
+            WD_STATE["State File<br/>~/.fleet-control/watchdog-state.json"]
+            WD_COUNT["Failure Counter<br/>Auto-restart after 2 failures"]
+        end
+
+        subgraph TELEGRAM["💬 Telegram Bot"]
+            direction TB
+            TG_POLL["Long Polling<br/>@SAMyosin_bot"]
+            TG_CMD["/restart  /status  /info"]
+            TG_ALERT["🔔 Alert on Every Restart"]
+        end
+    end
+
+    TS_ROUTE --> AUTH
+
+    ROUTER -->|"GET /health"| GW_PROC
+    ROUTER -->|"POST /restart<br/>Method 1: SIGUSR1"| GW_PROC
+    ROUTER -->|"POST /restart<br/>Method 2: CLI fallback"| CLI["openclaw gateway restart"]
+    ROUTER -->|"GET /info"| SYSINFO["os.hostname / uptime<br/>memory / CPU / versions"]
+
+    CLI --> GW_PROC
+
+    WD_CHECK -->|"GET /fleet/health<br/>(local, X-Watchdog bypass)"| ROUTER
+    WD_CHECK --> WD_COUNT
+    WD_COUNT -->|"≥2 failures"| ROUTER
+    WD_COUNT --> TG_ALERT
+
+    TG_CMD --> ROUTER
+    
+    ROUTER -->|"All restarts"| TG_ALERT
+
+    subgraph RESULTS["Response Flow"]
+        direction LR
+        R_OK["✅ 200 OK<br/>{ok: true, data: {...}}"]
+        R_401["🚫 401 Unauthorized"]
+        R_429["⏳ 429 Rate Limited"]
+        R_NOTIFY["📲 Push Notification<br/>to Apple Device"]
+    end
+
+    ROUTER --> R_OK
+    AUTH -->|"Invalid token"| R_401
+    RATE -->|"Exceeded 5/hr"| R_429
+    R_OK --> R_NOTIFY
+
+    style DEVICES fill:#1a1a2e,stroke:#e94560,color:#fff
+    style SHORTCUT fill:#0f3460,stroke:#e94560,color:#fff
+    style TAILSCALE fill:#16213e,stroke:#53d769,color:#fff
+    style MACMINI fill:#1a1a2e,stroke:#4da6ff,color:#fff
+    style API fill:#0f3460,stroke:#4da6ff,color:#fff
+    style GATEWAY fill:#1b2838,stroke:#ff6b35,color:#fff
+    style WATCHDOG fill:#1b2838,stroke:#ffd700,color:#fff
+    style TELEGRAM fill:#1b2838,stroke:#0088cc,color:#fff
+    style RESULTS fill:#16213e,stroke:#53d769,color:#fff
+    style AUTH fill:#2d1b69,stroke:#e94560,color:#fff
+    style RATE fill:#2d1b69,stroke:#ffd700,color:#fff
+    style ROUTER fill:#0f3460,stroke:#4da6ff,color:#fff

@@ -1,0 +1,89 @@
+---
+title: OpenClaw Audit Suite — Implementation Phases
+---
+graph LR
+    subgraph P0["Phase 0: Setup + Leadsie"]
+        P0_1["Project scaffold<br/>Fastify + TypeScript"]
+        P0_2["Leadsie API client"]
+        P0_3["Webhook handler"]
+        P0_4["Base interfaces<br/>Adapter + Engine"]
+    end
+
+    subgraph P1["Phase 1: Platform Adapters"]
+        P1_1["5 Leadsie-native<br/>Meta, Google Ads, GA,<br/>GTM, Shopify"]
+        P1_2["6 OAuth adapters<br/>Stripe, Gmail, Slack,<br/>Drive, Docs, WhatsApp"]
+        P1_3["Adapter registry<br/>+ parallel orchestrator"]
+        P1_4["Token vault<br/>AES-256-GCM"]
+    end
+
+    subgraph P2["Phase 2: Ad Engines"]
+        P2_1["Meta Ads engine"]
+        P2_2["Google Ads engine"]
+        P2_3["GA4 engine"]
+        P2_4["GTM engine"]
+        P2_5["Shopify engine"]
+    end
+
+    subgraph P3["Phase 3: Business Engines"]
+        P3_1["Stripe engine"]
+        P3_2["Gmail engine"]
+        P3_3["Slack engine"]
+        P3_4["Drive + Docs engine"]
+        P3_5["WhatsApp engine"]
+        P3_6["Cross-platform engine"]
+    end
+
+    subgraph P4["Phase 4: Scoring"]
+        P4_1["Revenue impact calc"]
+        P4_2["Effort estimator"]
+        P4_3["Priority ranker"]
+        P4_4["Agent mapper"]
+    end
+
+    subgraph P5["Phase 5: Dashboard"]
+        P5_1["React dashboard"]
+        P5_2["Platform detail views"]
+        P5_3["Real-time progress"]
+        P5_4["PDF export"]
+    end
+
+    subgraph P6["Phase 6: Sales"]
+        P6_1["Proposal generator"]
+        P6_2["ROI projections"]
+        P6_3["Use case narratives"]
+        P6_4["CRM handoff"]
+    end
+
+    subgraph P7["Phase 7: Hardening"]
+        P7_1["E2E test suite"]
+        P7_2["Security audit"]
+        P7_3["Docker + CI/CD"]
+        P7_4["Documentation"]
+    end
+
+    P0 --> P1
+    P1 --> P2
+    P1 --> P3
+    P2 --> P4
+    P3 --> P4
+    P4 --> P5
+    P5 --> P6
+    P6 --> P7
+
+    classDef setup fill:#1a1a2e,stroke:#00d4aa,stroke-width:2px,color:#fff
+    classDef adapters fill:#16213e,stroke:#00d4aa,stroke-width:2px,color:#fff
+    classDef adeng fill:#0f3460,stroke:#e94560,stroke-width:2px,color:#fff
+    classDef bizeng fill:#0f3460,stroke:#ffd700,stroke-width:2px,color:#fff
+    classDef scoring fill:#533483,stroke:#00d4aa,stroke-width:2px,color:#fff
+    classDef dash fill:#1a1a2e,stroke:#ffd700,stroke-width:2px,color:#fff
+    classDef sales fill:#2d132c,stroke:#e94560,stroke-width:2px,color:#fff
+    classDef harden fill:#0a3d62,stroke:#00d4aa,stroke-width:2px,color:#fff
+
+    class P0_1,P0_2,P0_3,P0_4 setup
+    class P1_1,P1_2,P1_3,P1_4 adapters
+    class P2_1,P2_2,P2_3,P2_4,P2_5 adeng
+    class P3_1,P3_2,P3_3,P3_4,P3_5,P3_6 bizeng
+    class P4_1,P4_2,P4_3,P4_4 scoring
+    class P5_1,P5_2,P5_3,P5_4 dash
+    class P6_1,P6_2,P6_3,P6_4 sales
+    class P7_1,P7_2,P7_3,P7_4 harden
