@@ -63,9 +63,9 @@ for await (const message of query({
 
 ---
 
-### 2. CLI Headless Mode (`claude -p`)
+### 2. CLI Headless Mode (`claude -p`) — DETAILED
 
-**What**: Shell out to the `claude` CLI in non-interactive print mode.
+**What**: Shell out to the `claude` CLI in non-interactive print mode. OpenClaw spawns `claude -p` as a child process, feeds it a prompt + flags, and collects structured output. No human interaction needed.
 
 **How it works**:
 ```bash
@@ -77,38 +77,286 @@ claude -p "Summarize the recent changes in this repo" \
   --no-session-persistence
 ```
 
-**Strengths**:
-- Simple shell integration — just spawn a process
-- Full CLI flag control (tools, budget, model, system prompts)
-- Can pipe input: `cat error.log | claude -p "Explain this error"`
-- Supports `--continue` and `--resume` for session management
-- Respects project `.claude/settings.json` and CLAUDE.md
+---
 
-**Weaknesses**:
-- Requires exec-approvals to allow the `claude` binary
-- Each invocation is a separate process (overhead)
-- Shell escaping complexity for dynamic prompts
-- Harder to stream results back in real-time vs SDK
+#### Complete Flag Reference (for OpenClaw integration)
 
-**Security impact**: MEDIUM — requires adding `claude` to exec-approvals allowlist.
+##### Output Formats
 
-**exec-approvals entry needed**:
+| Flag | Format | Use case |
+|------|--------|----------|
+| `--output-format text` | Plain text (default) | Simple results piped to logs |
+| `--output-format json` | Structured JSON | Parse result, session_id, usage, structured_output |
+| `--output-format stream-json` | NDJSON (one JSON per line) | Real-time progress streaming back to chat client |
+
+**JSON output structure** (what OpenClaw parses):
+```json
+{
+  "result": "The text response from Claude",
+  "session_id": "uuid-for-resume",
+  "structured_output": {},
+  "usage": { "input_tokens": 1200, "output_tokens": 450, "cost_usd": 0.02 }
+}
+```
+
+**Stream-JSON filtering** (for real-time progress):
+```bash
+claude -p "Build and test" \
+  --output-format stream-json \
+  --verbose \
+  --include-partial-messages | \
+  jq -rj 'select(.type == "stream_event" and .event.delta.type? == "text_delta") | .event.delta.text'
+```
+
+##### Tool Control
+
+```bash
+# Explicit allowlist (RECOMMENDED for OpenClaw)
+--allowedTools "Read,Edit,Glob,Grep"
+
+# Wildcard patterns for Bash
+--allowedTools "Bash(git *)" "Bash(npm run *)" "Read" "Edit"
+
+# Deny specific tools
+--disallowedTools "Bash(rm *)" "Bash(sudo *)"
+
+# Restrict total available tools
+--tools "Bash,Edit,Read"
+```
+
+**Available tool names**: `Read`, `Edit`, `Write`, `Bash`, `Glob`, `Grep`, `WebFetch`, `WebSearch`, `Agent`, `MCP`
+
+##### Model Selection
+
+```bash
+--model sonnet      # claude-sonnet-4-6 (fast, cheap — default workhorse)
+--model opus        # claude-opus-4-6 (deep reasoning — complex tasks)
+--model haiku       # claude-haiku-4-5 (fastest, cheapest — triage/routing)
+```
+
+##### System Prompt Injection
+
+| Flag | Behavior | OpenClaw use case |
+|------|----------|-------------------|
+| `--system-prompt "..."` | **Replace** entire system prompt | Full control, custom personality |
+| `--system-prompt-file ./prompt.txt` | **Replace** from file | Reproducible prompts stored in config |
+| `--append-system-prompt "..."` | **Append** to defaults | Add rules while keeping CLAUDE.md |
+| `--append-system-prompt-file ./rules.txt` | **Append** from file | Load customer-specific rules |
+
+**Recommended for OpenClaw**: Use `--append-system-prompt` to inject task context while preserving the project's CLAUDE.md and settings.json.
+
+##### Session Management
+
+```bash
+# One-shot (no persistence)
+claude -p "Quick analysis" --no-session-persistence
+
+# Multi-turn with session reuse
+session_id=$(claude -p "Analyze codebase" --output-format json | jq -r '.session_id')
+claude -p "Now fix the top issue" --resume "$session_id" --output-format json
+claude -p "Run the tests" --resume "$session_id" --output-format json
+
+# Continue most recent session
+claude -p "What was I working on?" --continue
+
+# Fork a session (new ID, same context)
+claude -p "Try alternative approach" --resume "$session_id" --fork-session
+```
+
+##### Safety Rails
+
+```bash
+--max-turns 10          # Hard limit on agentic turns (prevents runaway loops)
+--max-budget-usd 2.00   # Hard limit on API spend per invocation
+--permission-mode plan   # Read-only analysis (no writes, no bash)
+```
+
+##### Structured Output (JSON Schema enforcement)
+
+```bash
+claude -p "Extract all API endpoints from this codebase" \
+  --output-format json \
+  --json-schema '{
+    "type": "object",
+    "properties": {
+      "endpoints": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "method": {"type": "string"},
+            "path": {"type": "string"},
+            "handler": {"type": "string"}
+          }
+        }
+      }
+    },
+    "required": ["endpoints"]
+  }'
+```
+
+OpenClaw can enforce output schemas to get machine-parseable results every time.
+
+##### MCP Servers in CLI Mode
+
+```bash
+# Load MCP config for tool access
+claude -p "Query the database" --mcp-config ./mcp-servers.json
+
+# Strict mode (ONLY use specified servers)
+claude -p "Query the database" --strict-mcp-config --mcp-config ./mcp-servers.json
+
+# Allow specific MCP tools
+--allowedTools "MCP(postgres/query)" "MCP(github/create-pr)"
+```
+
+##### Additional Working Directories
+
+```bash
+# Give Claude access to multiple repos
+claude -p "Compare the auth implementations" \
+  --add-dir ../other-repo \
+  --add-dir ../shared-lib
+```
+
+---
+
+#### OpenClaw Integration Patterns
+
+##### Pattern A: One-shot task with structured result
+
+```bash
+# OpenClaw receives: "What's broken in the tests?"
+claude -p "Run the test suite and report failures" \
+  --output-format json \
+  --allowedTools "Bash(npm test *)" "Read" "Grep" \
+  --max-turns 5 \
+  --max-budget-usd 1.00 \
+  --append-system-prompt "Return a concise summary. No code blocks unless showing the fix."
+```
+
+OpenClaw parses `.result` and sends it back to the chat client.
+
+##### Pattern B: Multi-turn development session
+
+```bash
+# Step 1: Analyze
+sid=$(claude -p "Analyze the auth module for security issues" \
+  --output-format json \
+  --permission-mode plan \
+  --max-budget-usd 0.50 | jq -r '.session_id')
+
+# Step 2: Fix (same session, now with write access)
+claude -p "Fix the top 3 issues you found" \
+  --resume "$sid" \
+  --output-format json \
+  --allowedTools "Read,Edit,Bash(npm test *)" \
+  --max-budget-usd 2.00
+
+# Step 3: Commit (same session)
+claude -p "Commit the changes with a descriptive message" \
+  --resume "$sid" \
+  --output-format json \
+  --allowedTools "Bash(git *)" \
+  --max-budget-usd 0.50
+```
+
+##### Pattern C: Parallel execution (multiple processes)
+
+```bash
+# Fire 3 independent tasks simultaneously
+claude -p "Fix the login bug" --output-format json --max-budget-usd 2.00 &
+claude -p "Add unit tests for user service" --output-format json --max-budget-usd 2.00 &
+claude -p "Update the API documentation" --output-format json --max-budget-usd 1.00 &
+wait  # All 3 run concurrently
+```
+
+Each gets its own session, own context, own budget. OpenClaw collects results when all finish.
+
+##### Pattern D: Piping data through Claude
+
+```bash
+# Error log analysis
+cat /var/log/openclaw/gateway.log | claude -p \
+  "Summarize the errors from the last hour. Group by type." \
+  --output-format json --max-budget-usd 0.50
+
+# PR review
+gh pr diff 42 | claude -p \
+  "Review this PR for security issues and performance problems" \
+  --append-system-prompt "Be concise. Rate severity: low/medium/high/critical." \
+  --output-format json --max-budget-usd 1.00
+
+# Config validation
+cat config/settings.env | claude -p \
+  "Validate this configuration. Flag any security issues or missing values." \
+  --output-format json --max-budget-usd 0.25
+```
+
+---
+
+#### Strengths (expanded)
+
+- **Full autonomy**: No human interaction needed. Fire and collect.
+- **Complete flag control**: Tools, budget, model, system prompt, output format — all configurable per invocation
+- **Session chaining**: Multi-turn workflows via `--resume` with session IDs
+- **Parallel execution**: Multiple `claude -p` processes run concurrently
+- **Piping**: Feed any data via stdin — logs, diffs, configs, error output
+- **Structured output**: `--json-schema` enforces machine-parseable results
+- **Project awareness**: Respects `.claude/settings.json`, CLAUDE.md, and `.claude/commands/`
+- **MCP support**: Load MCP servers for database, API, and custom tool access
+- **Cost control**: `--max-budget-usd` and `--max-turns` prevent runaway spend
+- **Model flexibility**: Route cheap tasks to Haiku, complex to Opus, default to Sonnet
+
+#### Weaknesses (expanded)
+
+- **exec-approvals required**: Must add `claude` binary to the allowlist
+- **Process overhead**: Each invocation spawns a new Node.js process (~2-3s startup)
+- **Shell escaping**: Dynamic prompts with special characters need careful escaping
+- **No real-time streaming to chat**: `stream-json` works for logs but parsing NDJSON in real-time adds complexity vs SDK's native async iterators
+- **Skills unavailable**: `/commit`, `/review-pr`, etc. don't work in `-p` mode — describe the task instead
+- **Context window**: Each `-p` call starts fresh unless `--resume` is used; no automatic context sharing between parallel processes
+
+#### Security Impact: MEDIUM
+
+Requires adding `claude` to exec-approvals. The risk is that Claude Code itself can execute Bash commands, creating a "Claude spawning Claude" chain. Mitigations:
+
+1. **Force `-p` flag** via exec-approvals `required_args`
+2. **Block `--dangerously-skip-permissions`** via `forbidden_args`
+3. **Scope tools** with `--allowedTools` on every invocation
+4. **Cap spend** with `--max-budget-usd` on every invocation
+5. **Cap turns** with `--max-turns` to prevent infinite loops
+6. **Read-only mode** with `--permission-mode plan` for analysis tasks
+7. **No session persistence** with `--no-session-persistence` for sensitive operations
+
+**exec-approvals entry**:
 ```json
 {
   "id": "allow-claude-code-cli",
-  "description": "Claude Code CLI in headless mode only",
+  "description": "Claude Code CLI - headless mode only, scoped permissions",
   "binary": "/usr/local/bin/claude",
   "action": "allow",
   "argument_rules": {
     "required_args": ["-p"],
-    "forbidden_args": ["--dangerously-skip-permissions"],
-    "forbidden_patterns": ["sudo", "rm -rf", "curl", "wget"],
+    "forbidden_args": [
+      "--dangerously-skip-permissions",
+      "--allow-dangerously-skip-permissions",
+      "--permission-mode auto-accept"
+    ],
+    "forbidden_patterns": ["sudo", "rm -rf"],
     "max_total_length": 10000
   }
 }
 ```
 
-**Best for**: Simple one-shot tasks, piping data through Claude, scripts that already use shell.
+#### Best for
+
+- Autonomous one-shot tasks (analyze, fix, test, commit)
+- Multi-turn development sessions via `--resume`
+- Parallel workloads (3-5 concurrent `claude -p` processes)
+- Piping data through Claude (logs, diffs, configs)
+- Structured data extraction with `--json-schema`
+- Cost-controlled automation with hard budget caps
 
 ---
 
@@ -173,30 +421,318 @@ claude -p "Summarize the recent changes in this repo" \
 
 ---
 
-### 5. Teleport (Terminal <-> Web Bridge)
+### 5. Teleport (Terminal <-> Web Bridge) — DETAILED
 
-**What**: Use the existing Teleport skill to seamlessly transfer sessions between Claude Code terminal and web interfaces.
+**What**: Seamlessly transfer sessions between Claude Code terminal and Claude Code Web (claude.ai/code). Send heavy work to the cloud, continue local work, pull results back when ready. Already implemented as a skill in this project.
 
-**How it works**:
-- `&` prefix or `--remote` flag sends tasks to Claude Code Web
-- `/teleport` or `--teleport` brings web sessions back to terminal
-- `/tasks` checks status of parallel remote tasks
+**Core philosophy**: "Work where it makes sense. Execute in the cloud. Finish on your machine."
 
-**Strengths**:
-- Best of both worlds — start local, continue on web, or vice versa
-- Already implemented in the Clawdbot Ready project
-- Enables fire-and-forget pattern (send to web, check later)
-- Good for long-running tasks that shouldn't block the terminal
+---
 
-**Weaknesses**:
-- Depends on both local Claude Code and claude.ai/code being available
-- Git state must be clean for transfers
-- Branch management complexity
-- Session context may not transfer perfectly
+#### Commands Reference
 
-**Security impact**: LOW-MEDIUM — uses existing Claude Code permissions.
+##### Terminal → Web (Sending tasks to the cloud)
 
-**Best for**: Offloading long tasks to the cloud, picking up work across devices, parallel execution of independent tasks.
+| Command | Description | OpenClaw use |
+|---------|-------------|--------------|
+| `& <task>` | Prefix any message with `&` to send to a new web session | Primary fire-and-forget mechanism |
+| `claude --remote "<task>"` | Explicit remote execution from CLI | Scriptable alternative to `&` |
+| `claude --permission-mode plan` | Enter read-only plan mode before sending | Safe pre-flight analysis |
+
+**What happens when you send**:
+1. Task is sent to Claude Code Web with current conversation context
+2. A new web session is created on an Anthropic-managed cloud VM
+3. The repository is cloned and the cloud environment is prepared
+4. Claude works autonomously (operator can steer via web UI if desired)
+5. Changes are pushed to a new branch when complete
+6. Operator is notified — can create PR or teleport back
+
+**Multiple `&` tasks create independent parallel web sessions.** This is the key differentiator — you can have 5 web sessions running simultaneously while continuing local work.
+
+##### Web → Terminal (Bringing sessions back)
+
+| Command | Description | OpenClaw use |
+|---------|-------------|--------------|
+| `/teleport` or `/tp` | Interactive session picker (inside Claude Code) | Pull completed work back |
+| `claude --teleport` | Interactive picker from shell | Script-friendly |
+| `claude --teleport <session-id>` | Teleport specific session by ID | Fully automated |
+| `t` key in `/tasks` view | Teleport the selected task | Quick operator action |
+| "Open in CLI" button | In web UI, copies teleport command | Operator-initiated |
+
+**What happens when you teleport back**:
+1. Claude verifies you're in the correct repository
+2. Fetches and checks out the branch from the remote session
+3. Loads the full conversation history into your terminal
+4. You continue with full local tool access (MCP servers, filesystem, etc.)
+
+##### Monitoring
+
+| Command | Description |
+|---------|-------------|
+| `/tasks` | View all parallel web sessions: status, duration, session ID |
+
+##### Configuration
+
+| Command | Description |
+|---------|-------------|
+| `/remote-env` | Configure cloud environment: network level, pre-installed tools, env vars |
+| `check-tools` | Ask Claude to list all tools available in the cloud environment |
+
+---
+
+#### Cloud Environment Capabilities
+
+When a task is teleported to the web, it runs on an Anthropic-managed VM with:
+
+| Category | Available |
+|----------|-----------|
+| Languages | Python 3.x, Node.js LTS, Ruby 3.x, Go, Rust, Java |
+| Package Managers | pip, npm, yarn, pnpm, gem, cargo |
+| Databases | PostgreSQL 16, Redis 7.0 |
+| Build Tools | Make, CMake, Gradle, Maven |
+| Network | Configurable via `/remote-env` |
+
+---
+
+#### Pre-Teleport Requirements (Web → Terminal)
+
+All four must be satisfied before bringing a session back:
+
+| # | Requirement | Verify | Fix |
+|---|-------------|--------|-----|
+| 1 | **Clean git state** | `git status` | `git stash push -u -m "Pre-teleport"` |
+| 2 | **Correct repository** | `git remote -v` | `cd` to correct repo or `git clone` |
+| 3 | **Branch on remote** | `git fetch --all && git branch -r` | Wait for session to complete |
+| 4 | **Same account** | `claude auth status` | `claude auth logout && claude auth login` |
+
+**Automated pre-flight check** (OpenClaw can run this before any teleport):
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check 1: Clean git state
+if [ -n "$(git status --porcelain)" ]; then
+  echo "FAIL: Uncommitted changes. Stashing..."
+  git stash push -u -m "Pre-teleport: $(date +%Y%m%d-%H%M%S)"
+fi
+
+# Check 2: Correct repo
+EXPECTED_REMOTE="github.com/Organized-AI/clawdbotready"
+ACTUAL_REMOTE=$(git remote get-url origin)
+if [[ "$ACTUAL_REMOTE" != *"$EXPECTED_REMOTE"* ]]; then
+  echo "FAIL: Wrong repository. Expected $EXPECTED_REMOTE, got $ACTUAL_REMOTE"
+  exit 1
+fi
+
+# Check 3: Branch available
+git fetch --all --quiet
+if ! git branch -r | grep -q "$TARGET_BRANCH"; then
+  echo "FAIL: Branch $TARGET_BRANCH not found on remote"
+  exit 1
+fi
+
+# Check 4: Auth
+if ! claude auth status --text 2>/dev/null | grep -q "authenticated"; then
+  echo "FAIL: Not authenticated. Run: claude auth login"
+  exit 1
+fi
+
+echo "OK: All pre-teleport checks passed"
+```
+
+---
+
+#### OpenClaw Integration Patterns
+
+##### Pattern A: Fire-and-forget (primary autonomous pattern)
+
+```
+User (via iMessage) → "Add dark mode to the dashboard"
+    ↓
+OpenClaw receives message
+    ↓
+OpenClaw sends: & Add dark mode to the dashboard. Use Tailwind dark: variants.
+                  Create a toggle in the settings page. Update all components.
+    ↓
+New web session created (runs autonomously in Anthropic cloud)
+    ↓
+OpenClaw replies to user: "Working on it — I've sent this to a cloud session.
+                           I'll let you know when it's ready."
+    ↓
+[10 minutes later — web session completes, pushes branch]
+    ↓
+OpenClaw detects completion via /tasks polling
+    ↓
+OpenClaw teleports back: claude --teleport <session-id>
+    ↓
+OpenClaw runs tests locally, creates PR, notifies user
+```
+
+This is the **most powerful autonomous pattern** — OpenClaw offloads heavy development to the cloud, continues handling other messages locally, and pulls results back when ready.
+
+##### Pattern B: Parallel workstreams
+
+```bash
+# OpenClaw sends 3 tasks to the cloud simultaneously
+& Fix the authentication bug in packages/gateway/src/auth.ts
+& Add unit tests for the user service (aim for 80% coverage)
+& Update the API documentation to match the new endpoints
+
+# Each creates an independent web session
+# OpenClaw monitors all 3 via /tasks
+# As each completes, teleport back and merge
+```
+
+##### Pattern C: Heavy compute offload
+
+```bash
+# Large codebase analysis that would take 20+ minutes locally
+& Analyze the entire codebase for security vulnerabilities.
+  Check all dependencies for known CVEs.
+  Review authentication flows for OWASP Top 10 issues.
+  Create a detailed report with severity ratings and fix recommendations.
+
+# This runs in the cloud while OpenClaw stays responsive
+```
+
+##### Pattern D: Worktree isolation (prevents branch conflicts)
+
+```bash
+# Create an isolated worktree for the teleported session
+git worktree add ../teleport-work feature-branch
+cd ../teleport-work
+claude --teleport <session-id>
+
+# Work in isolation — main working tree untouched
+# When done:
+git worktree remove ../teleport-work
+```
+
+This integrates with the `git-worktree-master` skill already in the project.
+
+##### Pattern E: Hybrid local+cloud workflow
+
+```bash
+# Step 1: Quick local analysis (CLI -p, fast)
+analysis=$(claude -p "What's the root cause of the auth failures?" \
+  --output-format json --permission-mode plan --max-budget-usd 0.50 | jq -r '.result')
+
+# Step 2: Send the fix to the cloud (Teleport, background)
+& Based on this analysis: "$analysis"
+  Fix the root cause in packages/gateway/src/auth.ts.
+  Add regression tests. Run the full test suite.
+
+# Step 3: Continue handling other tasks locally while cloud works
+```
+
+This combines CLI `-p` (fast local analysis) with Teleport (heavy cloud execution).
+
+---
+
+#### When to Use Web vs Terminal
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Long-running builds/tests (10+ min) | Web | Don't block the local terminal |
+| Parallel feature work | Web | Multiple sessions run independently |
+| Tasks while laptop is closed | Web | Cloud runs independently |
+| Repos not cloned locally | Web | Cloud clones from GitHub directly |
+| Git operations (commit, push, PR) | Terminal | Full local git access |
+| MCP tool integrations | Terminal | MCP servers run locally |
+| Local filesystem operations | Terminal | Direct disk access |
+| Quick fixes (< 2 min) | Terminal | No clone/setup overhead |
+| Complex debugging | Plan locally → execute on web | Best of both |
+| Security-sensitive operations | Terminal | Keep data local |
+
+---
+
+#### Skill Integrations
+
+Teleport works with three other skills already in this project:
+
+**boris** (verification methodology):
+- Run `/verify` and `/commit` before sending to web
+- Run `/status` and `/verify` after teleporting back
+- Ensures quality gates on both sides of the transfer
+
+**long-runner** (multi-context orchestration):
+- Offload heavy features to `&` web sessions
+- Continue local work in parallel
+- Monitor with `/tasks`
+- Teleport back when ready
+
+**git-worktree-master** (branch isolation):
+- Create isolated worktree for teleported sessions
+- Prevents branch conflicts with main working tree
+- Clean up worktree when session is merged
+
+---
+
+#### Error Handling
+
+| Error Category | Common Issue | Resolution |
+|----------------|-------------|------------|
+| **Git State** | Uncommitted changes | Auto-stash before teleport |
+| **Git State** | Merge conflict in progress | Resolve or abort before teleport |
+| **Repository** | Wrong repo (URL mismatch) | `cd` to correct repo |
+| **Repository** | Not a git repository | Initialize or clone |
+| **Branch** | Branch not found on remote | Wait for web session to push |
+| **Branch** | Branch has diverged | `git fetch && git reset` or create worktree |
+| **Auth** | Session not found (404) | Session may have expired — check `/tasks` |
+| **Auth** | Authentication expired | `claude auth logout && claude auth login` |
+| **Network** | Connection timeout | Retry — sessions survive network drops (~10 min tolerance) |
+| **Session** | Stuck/unresponsive | Cancel and re-send task |
+
+**Recovery procedure for failed teleport**:
+```bash
+# Manual branch checkout (bypass teleport)
+git fetch origin
+git checkout -b recovered-work origin/web-session-branch
+
+# Recover stashed changes (if stashed pre-teleport)
+git stash list
+git stash pop
+```
+
+---
+
+#### Strengths (expanded)
+
+- **True fire-and-forget**: Send task, forget about it, get notified when done
+- **Parallel execution**: 5+ web sessions running simultaneously
+- **No local resources**: Cloud sessions use Anthropic's compute, not your Mac
+- **Full context transfer**: Conversation history carries across terminal ↔ web
+- **Already built**: Teleport skill exists in this project — just needs OpenClaw integration
+- **Human-optional**: Operator can monitor web sessions in browser, or ignore them entirely
+- **Branch-based handoff**: All work comes back as git branches — clean, mergeable, auditable
+- **Composable with CLI -p**: Use `-p` for fast local analysis, `&` for heavy cloud execution
+
+#### Weaknesses (expanded)
+
+- **Git cleanliness required**: Must stash/commit before web→terminal transfer
+- **Branch management**: Each web session creates a branch — can pile up if not cleaned
+- **No local tool access**: Web sessions can't use MCP servers or local services
+- **Session one-way**: `&` always creates a *new* web session — can't resume an existing one
+- **Clone overhead**: Web sessions clone the full repo each time (~30s-2min depending on size)
+- **Subscription required**: Max plan needed for claude.ai/code access
+- **Completion detection**: OpenClaw needs to poll `/tasks` to detect when web sessions finish — no push notification mechanism
+
+#### Security Impact: LOW-MEDIUM
+
+- Uses existing Claude Code permissions for the terminal side
+- Cloud sessions are fully sandboxed by Anthropic
+- All work comes back as git branches — auditable, reversible
+- No direct exec-approvals changes needed (Teleport is a skill, not a binary)
+- **Risk**: Web sessions have network access in the cloud — could potentially exfiltrate repo contents. Mitigated by Anthropic's cloud security model.
+
+#### Best for
+
+- Heavy development tasks that take 10+ minutes
+- Parallel feature work across multiple branches
+- Tasks that shouldn't block the terminal (operator keeps chatting)
+- Long-running test suites or builds
+- Cross-device workflows (start on Mac, monitor from phone)
+- Combining with CLI `-p` for hybrid local+cloud workflows
 
 ---
 
