@@ -763,141 +763,341 @@ git stash pop
 
 ---
 
+## Strategic Approach: Max Plan First
+
+### Why Max-first?
+
+The Max plan ($200/mo) is already paid for. Every task routed through subscription-based methods (CLI `-p`, Teleport, Remote Control, Web) has **zero marginal cost**. Agent SDK burns API tokens on top of the subscription — it should be the fallback, not the default.
+
+```
+Cost per task:
+  CLI -p (Max plan)     → $0.00  (included in subscription)
+  Teleport/Web          → $0.00  (included in subscription)
+  Remote Control        → $0.00  (included in subscription)
+  Agent SDK             → $0.02-5.00+  (API tokens, per task)
+```
+
+**The strategic question isn't "which method is most capable?" — it's "which method extracts the most value from what we're already paying for?"**
+
+### Decision: API key vs subscription → **Subscription first, API as overflow**
+
+The Max plan includes:
+- Unlimited Claude Code terminal sessions (CLI `-p`)
+- Claude Code Web sessions (Teleport `&` targets)
+- Remote Control sessions
+- Higher rate limits than Pro
+
+API tokens (Agent SDK) are reserved for:
+- Burst capacity beyond Max plan rate limits
+- Programmatic multi-agent coordination that genuinely needs SDK features (structured output schemas, in-process callbacks)
+- Customer-facing automation where per-task cost tracking is required
+
+---
+
 ## Decision Matrix
 
-| Method | Autonomous? | Multi-session? | Local access? | Cost model | Security | Setup complexity |
-|--------|-------------|----------------|---------------|------------|----------|-----------------|
-| **Agent SDK** | Yes | Yes (parallel) | Via tools | API tokens | Low | Low (npm install) |
-| **CLI `-p`** | Yes | Yes (processes) | Full | API tokens | Medium | Medium (exec-approvals) |
-| **Remote Control** | No (human-in-loop) | No (1 session) | Full | Subscription | Medium | Medium |
-| **Web** | Semi (manual trigger) | Yes | No (cloud) | Subscription | Low | Low |
-| **Teleport** | Semi | Yes (fire-forget) | Hybrid | Both | Low-Med | Low (already built) |
-| **Claude Desktop** | No (human-in-loop) | No | Via MCP | Subscription | Medium | Medium (MCP config) |
+| Method | Autonomous? | Multi-session? | Local access? | Cost | Security | Priority |
+|--------|-------------|----------------|---------------|------|----------|----------|
+| **CLI `-p`** | **Yes** | **Yes (processes)** | **Full** | **$0 (Max)** | Medium | **PRIMARY** |
+| **Teleport** | **Yes (fire-forget)** | **Yes (parallel)** | **Hybrid** | **$0 (Max)** | Low-Med | **PRIMARY** |
+| **Remote Control** | No (human-in-loop) | No (1 session) | Full | $0 (Max) | Medium | SECONDARY |
+| **Web** | Semi (manual) | Yes | No (cloud) | $0 (Max) | Low | SECONDARY |
+| **Claude Desktop** | No (human-in-loop) | No | Via MCP | $0 (Max) | Medium | TERTIARY |
+| **Agent SDK** | Yes | Yes (parallel) | Via tools | **$$$ (API)** | Low | **LAST RESORT** |
 
 ---
 
 ## Recommended Implementation Order
 
-### Tier 1: Immediate (no exec-approvals changes)
-1. **Agent SDK** — Most capable, most secure, most programmatic. This is the primary workhorse for multi-agent coordination.
+### Tier 1: Primary Workhorses (Max plan, autonomous, $0/task)
 
-### Tier 2: Near-term (minimal exec-approvals changes)
-2. **CLI `-p` mode** — For shell-based workflows and piping. Add `claude` to exec-approvals with strict argument rules.
-3. **Teleport** — Already built. Enable OpenClaw to use the `&` prefix pattern for fire-and-forget.
+These two methods handle 90% of OpenClaw's autonomous work at zero marginal cost.
 
-### Tier 3: Operator-assisted
-4. **Remote Control** — For supervised sessions where the operator wants mobile monitoring.
-5. **Claude Desktop** — For operators who prefer GUI interaction with MCP tools.
-6. **Web** — For cloud-based parallel work on GitHub repos.
+#### 1a. CLI `-p` — Local autonomous execution
+- **When**: Task needs local filesystem, MCP servers, or quick turnaround (< 5 min)
+- **Cost**: $0 (Max plan subscription)
+- **Setup**: Add `claude` to exec-approvals with strict argument rules
+- **Autonomy**: Full — fire prompt, collect result, no human needed
+
+#### 1b. Teleport (`&`) — Cloud autonomous execution
+- **When**: Task is long-running (10+ min), parallelizable, or shouldn't block the terminal
+- **Cost**: $0 (Max plan subscription)
+- **Setup**: Already built as a skill — just wire OpenClaw to use `&` prefix
+- **Autonomy**: Full — fire to cloud, poll `/tasks`, teleport back when done
+
+**Together they cover everything**:
+- Fast local task? → CLI `-p`
+- Long cloud task? → Teleport `&`
+- Need both? → CLI `-p` for analysis, `&` for execution (Pattern E)
+- Need 5 things at once? → 5x `&` parallel web sessions
+
+### Tier 2: Operator-Assisted (Max plan, human-in-loop, $0/task)
+
+#### 2a. Remote Control — Mobile supervision
+- **When**: Operator wants to monitor/steer from phone or browser
+- **Cost**: $0 (Max plan)
+- **Trigger**: Operator explicitly requests supervised mode
+
+#### 2b. Claude Code Web — Cloud-only repos
+- **When**: Working on repos not cloned locally, or operator wants web UI
+- **Cost**: $0 (Max plan)
+- **Trigger**: Repo not available locally, or operator prefers web
+
+#### 2c. Claude Desktop — MCP-powered GUI
+- **When**: Operator prefers desktop GUI with custom MCP tools
+- **Cost**: $0 (Max plan)
+- **Trigger**: Operator has Claude Desktop configured
+
+### Tier 3: Last Resort (API tokens, per-task cost)
+
+#### 3. Agent SDK — Programmatic fallback
+- **When**: Max plan rate limits hit, need structured JSON schemas enforced at the SDK level, or building customer-facing automation that requires per-task cost attribution
+- **Cost**: $0.02-5.00+ per task (API tokens)
+- **Trigger**: Only when Tier 1 methods can't handle the requirement
+
+**Why last?** Every SDK call costs money on top of the subscription. If CLI `-p` can do the same thing for $0, use CLI `-p`. The SDK's advantages (in-process callbacks, native async iterators, structured output) rarely outweigh the cost savings of Max plan methods — and CLI `-p` supports `--json-schema` for structured output anyway.
+
+---
+
+## Architecture: Max-Plan-Optimized Coordinator
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                     OpenClaw Gateway                          │
+│                   (Native macOS Host)                          │
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │              Task Router (Max-Plan-First)                 │ │
+│  │                                                            │ │
+│  │  Incoming task → Classify → Route:                         │ │
+│  │                                                            │ │
+│  │  ┌─────────────────────────────────────────┐               │ │
+│  │  │ Is it a quick local task? (< 5 min)     │──Yes──→ CLI -p│ │
+│  │  └──────────────┬──────────────────────────┘               │ │
+│  │                 No                                          │ │
+│  │  ┌─────────────────────────────────────────┐               │ │
+│  │  │ Long-running or parallelizable?         │──Yes──→ & Tel │ │
+│  │  └──────────────┬──────────────────────────┘               │ │
+│  │                 No                                          │ │
+│  │  ┌─────────────────────────────────────────┐               │ │
+│  │  │ Operator wants to supervise?            │──Yes──→ RC    │ │
+│  │  └──────────────┬──────────────────────────┘               │ │
+│  │                 No                                          │ │
+│  │  ┌─────────────────────────────────────────┐               │ │
+│  │  │ Rate limited / need SDK features?       │──Yes──→ SDK   │ │
+│  │  └──────────────┬──────────────────────────┘               │ │
+│  │                 No                                          │ │
+│  │                 └──→ Default to CLI -p                      │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │                Execution Layer                          │    │
+│  │                                                          │    │
+│  │  ┌──────────┐  ┌──────────┐  ┌─────┐  ┌─────┐  ┌───┐  │    │
+│  │  │ CLI -p   │  │ Teleport │  │ RC  │  │ Web │  │SDK│  │    │
+│  │  │          │  │          │  │     │  │     │  │   │  │    │
+│  │  │ LOCAL    │  │ CLOUD    │  │LOCAL│  │CLOUD│  │API│  │    │
+│  │  │ $0/task  │  │ $0/task  │  │ $0  │  │ $0  │  │$$$│  │    │
+│  │  │ Fast     │  │ Parallel │  │Watch│  │Repos│  │FB │  │    │
+│  │  └──────────┘  └──────────┘  └─────┘  └─────┘  └───┘  │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │                Session Lifecycle                        │    │
+│  │                                                          │    │
+│  │  1. Task arrives (iMessage/Telegram/API)                 │    │
+│  │  2. Router classifies → picks method                    │    │
+│  │  3. Session spawns (local process or cloud `&`)          │    │
+│  │  4. Monitor: poll /tasks (cloud) or wait PID (local)     │    │
+│  │  5. Collect result: parse JSON (local) or teleport (cloud)│   │
+│  │  6. Post-process: run tests, create PR, notify user      │    │
+│  │  7. Log session metadata for audit                       │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Operational Patterns
+
+### The Daily Workflow
+
+Most days, OpenClaw handles tasks like this:
+
+```
+Morning:
+  User: "Fix the login bug"
+  Router: Quick local fix → CLI -p (3 min, $0)
+
+  User: "Also add 2FA support and update the docs"
+  Router: Two independent tasks → & Teleport x2 ($0, parallel cloud)
+  OpenClaw: "Both are running in the cloud. I'll let you know."
+
+Afternoon:
+  [Cloud sessions complete]
+  OpenClaw: Teleports both back, runs tests, creates PRs
+  OpenClaw: "Both PRs are ready for review."
+
+  User: "Walk me through the 2FA implementation"
+  Router: Operator wants to steer → Remote Control
+  OpenClaw: Starts RC session, operator follows along on phone
+
+Evening:
+  User: "Run a full security audit across all repos"
+  Router: Long + multi-repo → & Teleport (heavy compute, $0)
+  OpenClaw: "Running in the cloud. Results tomorrow morning."
+```
+
+**Zero API tokens burned all day.**
+
+### When Agent SDK Gets Used
+
+```
+Scenario 1: Rate limit hit
+  3x Teleport sessions + 2x CLI -p already running
+  New urgent task arrives
+  Router: Max plan at capacity → Agent SDK (overflow, ~$1.50)
+
+Scenario 2: Structured multi-agent coordination
+  Need 10 agents working on different files simultaneously
+  with in-process callbacks between them
+  Router: SDK's async iterators are genuinely better here → Agent SDK (~$5.00)
+
+Scenario 3: Customer-facing automation
+  Client's system needs per-task cost attribution
+  Router: SDK provides usage tracking per session → Agent SDK (billable)
+```
 
 ---
 
 ## Security Considerations
 
-### API Key Management
-- Agent SDK and CLI modes require `ANTHROPIC_API_KEY`
-- Store in secure location (not in workspace, not in git)
-- Consider key rotation schedule
-- Set per-session budget limits (`--max-budget-usd`)
+### For Max Plan Methods (CLI `-p` and Teleport)
 
-### Exec-Approvals Changes
-For CLI mode, add to `config/exec-approvals.json`:
+#### Exec-Approvals (CLI `-p` only)
+Add to `config/exec-approvals.json`:
 ```json
 {
   "id": "allow-claude-code-cli",
-  "description": "Claude Code CLI - headless mode only, no skip-permissions",
+  "description": "Claude Code CLI - headless mode only, scoped permissions",
   "binary": "/usr/local/bin/claude",
   "action": "allow",
   "argument_rules": {
     "required_args": ["-p"],
     "forbidden_args": [
       "--dangerously-skip-permissions",
-      "--permission-mode bypassPermissions"
+      "--allow-dangerously-skip-permissions",
+      "--permission-mode auto-accept"
     ],
+    "forbidden_patterns": ["sudo", "rm -rf"],
     "max_total_length": 10000
   }
 }
 ```
 
-### Tool Scoping
-When spawning Claude Code sessions, always scope tools:
+#### Tool Scoping (every CLI `-p` invocation)
+```bash
+# Always scope tools explicitly
+--allowedTools "Read,Edit,Glob,Grep,Bash(git *),Bash(npm test *)"
+
+# Never leave tools unscoped
+# Never allow unrestricted Bash
+```
+
+#### Turn Limits (prevent runaway sessions)
+```bash
+--max-turns 15    # Hard cap on agentic loops
+```
+
+#### Teleport Security
+- Cloud sessions are sandboxed by Anthropic — low risk
+- All work returns as git branches — auditable, revertable
+- No exec-approvals changes needed (Teleport is a skill, not a binary)
+- Pre-teleport checks enforce clean git state before pulling back
+
+### For Agent SDK (when used as fallback)
+
+#### API Key Protection
+- Store `ANTHROPIC_API_KEY` outside workspace (e.g., macOS Keychain, `~/.config/openclaw/.env`)
+- Never commit to git — verify `.gitignore` coverage
+- Rotate quarterly minimum
+
+#### Budget Caps
 ```typescript
-// Good: explicit allowlist
-allowedTools: ["Read", "Edit", "Glob", "Grep", "Bash(git *)"]
+// Always set per-session limits
+maxBudgetUsd: 5.00
+maxTurns: 20
 
-// Bad: unrestricted
-allowedTools: undefined  // allows everything
+// Track daily spend across all SDK sessions
+// Alert operator at 80% of daily ceiling
 ```
 
-### Budget Limits
-Always set cost caps:
-```typescript
-maxBudgetUsd: 5.00  // per-session limit
-maxTurns: 20        // prevent runaway loops
-```
-
-### Monitoring
-- Log all Claude Code session starts/stops
-- Track token usage per session
-- Alert on budget threshold breaches
-- Audit tool usage patterns
-
----
-
-## Architecture: OpenClaw as Multi-Agent Coordinator
-
-```
-┌─────────────────────────────────────────────────┐
-│                  OpenClaw Gateway                 │
-│              (Native macOS Host)                  │
-│                                                   │
-│  ┌─────────────────────────────────────────────┐ │
-│  │           Access Method Router               │ │
-│  │                                               │ │
-│  │  Task analysis → Pick best method:            │ │
-│  │  • Quick code fix? → Agent SDK (Sonnet)       │ │
-│  │  • Deep refactor? → Agent SDK (Opus)          │ │
-│  │  • Shell pipeline? → CLI -p mode              │ │
-│  │  • Long background? → Teleport to Web         │ │
-│  │  • Need oversight? → Remote Control           │ │
-│  │  • GitHub-only? → Claude Code Web             │ │
-│  └──────┬──────┬──────┬──────┬──────┬───────────┘ │
-│         │      │      │      │      │              │
-│    ┌────▼──┐ ┌─▼───┐ ┌▼────┐ ┌▼───┐ ┌▼─────┐     │
-│    │Agent  │ │CLI  │ │Tele-│ │RC  │ │Web   │     │
-│    │SDK    │ │-p   │ │port │ │    │ │      │     │
-│    │       │ │     │ │     │ │    │ │      │     │
-│    │Parallel│ │Shell│ │Fire │ │Mon-│ │Cloud │     │
-│    │sessions│ │pipe │ │forget│ │itor│ │repos │    │
-│    └───────┘ └─────┘ └─────┘ └────┘ └──────┘     │
-│                                                    │
-└────────────────────────────────────────────────────┘
-```
+### Monitoring (all methods)
+- Log every session start/stop with method, duration, task summary
+- Track Max plan rate limit proximity (warn at 80% utilization)
+- For SDK sessions: track token usage and cost per session
+- Audit tool usage patterns weekly
+- Alert on anomalous session durations (> 30 min for CLI -p, > 2 hours for Teleport)
 
 ---
 
 ## Open Questions
 
-1. **API key vs subscription**: Should OpenClaw use API tokens (pay-per-use) or ride the operator's Max subscription (flat rate)? SDK needs API key. RC/Web need subscription.
+1. ~~**API key vs subscription**~~ → **DECIDED: Max plan first, SDK as overflow only.**
 
-2. **Autonomy level**: Should OpenClaw auto-select the access method, or should it propose and let the operator approve?
+2. **Rate limit awareness**: What are the Max plan's actual rate limits for CLI `-p` and Teleport? Need to measure empirically to know when SDK fallback is needed. Current best guess: ~5 concurrent sessions.
 
-3. **Cost governance**: What's the per-task and per-day budget ceiling? Who gets alerted when thresholds are approached?
+3. **Autonomy level**: Should OpenClaw auto-route tasks, or propose the method and let the operator approve? Recommendation: auto-route for Tier 1 methods, ask for Tier 2+.
 
-4. **Session persistence**: Should Claude Code sessions be saved for audit/replay? How long to retain?
+4. **Session persistence**: CLI `-p` sessions can be resumed via `--resume`. Should OpenClaw auto-persist all sessions for audit/replay? Storage cost vs auditability tradeoff.
 
-5. **Repo access**: Which repos should OpenClaw's Claude Code sessions have access to? All repos on the machine, or a scoped list?
+5. **Repo scoping**: Which repos should CLI `-p` have access to? Options:
+   - All repos on the Mac (most capable, highest risk)
+   - Scoped list in config (balanced)
+   - Only the current project directory (safest, most limiting)
+
+6. **Teleport polling interval**: How often should OpenClaw poll `/tasks` for cloud session completion? Too fast = noise. Too slow = delayed results. Candidates: 30s, 60s, 5min.
+
+7. **Branch cleanup**: Teleport creates a new branch per cloud session. Automated cleanup policy needed — delete after merge? After 7 days? Never?
 
 ---
 
 ## Next Steps
 
-- [ ] Decision: Approve Tier 1 (Agent SDK) for implementation
-- [ ] Decision: Set budget limits and cost governance policy
-- [ ] Decision: Define which repos/directories are in scope
-- [ ] Implementation: Add `@anthropic-ai/claude-agent-sdk` to OpenClaw dependencies
-- [ ] Implementation: Build access method router
-- [ ] Implementation: Add monitoring/logging for Claude Code sessions
-- [ ] Implementation: Update exec-approvals for CLI mode (Tier 2)
-- [ ] Testing: Validate Agent SDK integration end-to-end
-- [ ] Documentation: Update CLAUDE.md with new capabilities
+### Phase 1: CLI `-p` Integration (Tier 1a)
+- [ ] Add `claude` to exec-approvals with strict argument rules
+- [ ] Build OpenClaw → CLI `-p` spawner (Node.js `child_process`)
+- [ ] Implement JSON output parsing for `.result` and `.session_id`
+- [ ] Add `--resume` support for multi-turn sessions
+- [ ] Test with real tasks: analyze, fix, test, commit cycle
+- [ ] Measure Max plan rate limits empirically
+
+### Phase 2: Teleport Integration (Tier 1b)
+- [ ] Wire OpenClaw to send `&` prefixed tasks (fire-and-forget)
+- [ ] Build `/tasks` polling loop for session completion detection
+- [ ] Implement automated teleport-back with pre-flight checks
+- [ ] Add worktree isolation for parallel teleport sessions
+- [ ] Test parallel cloud execution (3-5 simultaneous sessions)
+- [ ] Build branch cleanup automation
+
+### Phase 3: Task Router
+- [ ] Build classification logic (quick/local vs long/cloud vs supervised)
+- [ ] Implement routing rules with method selection
+- [ ] Add fallback chain: CLI -p → Teleport → SDK
+- [ ] Rate limit detection and automatic SDK overflow
+- [ ] Operator notification for routing decisions
+
+### Phase 4: Monitoring & Observability
+- [ ] Session logging (start, stop, method, duration, outcome)
+- [ ] Rate limit proximity tracking
+- [ ] SDK usage + cost tracking (when used)
+- [ ] Weekly audit report generation
+- [ ] Alert thresholds for anomalous behavior
+
+### Phase 5: Agent SDK Fallback (Tier 3 — only if needed)
+- [ ] Add `@anthropic-ai/claude-agent-sdk` to OpenClaw dependencies
+- [ ] Build SDK session wrapper with budget caps
+- [ ] Implement overflow routing from rate-limited Max plan methods
+- [ ] Per-task cost attribution logging
+- [ ] Test SDK ↔ Max plan method interop
