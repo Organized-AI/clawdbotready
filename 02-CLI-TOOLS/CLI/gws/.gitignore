@@ -1,0 +1,15 @@
+# Credentials — NEVER commit
+CONFIG/credentials/
+CONFIG/*.secret.json
+*.pem
+*.p12
+token.json
+credentials.json
+.env
+.env.*
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
