@@ -767,7 +767,7 @@ git stash pop
 
 ### Why Max-first?
 
-The Max plan ($200/mo) is already paid for. Every task routed through subscription-based methods (CLI `-p`, Teleport, Remote Control, Web) has **zero marginal cost**. Agent SDK burns API tokens on top of the subscription — it should be the fallback, not the default.
+The Max 5x plan ($100/mo) is already paid for. Every task routed through subscription-based methods (CLI `-p`, Teleport, Remote Control, Web) has **zero marginal cost**. Agent SDK burns API tokens on top of the subscription — it should be the fallback, not the default.
 
 ```
 Cost per task:
@@ -1053,44 +1053,70 @@ See "Strategic Approach: Max Plan First" section above.
 ### 2. ~~Rate limit awareness~~ → **DECIDED: Empirical measurement + adaptive routing.**
 
 **What we know** (as of March 2026):
-- Max 20x ($200/mo) = 20× Pro's token allowance
+- **Current plan: Max 5x** ($100/mo) = 5× Pro's token allowance
 - **5-hour rolling window** — resets every 5 hours, countdown shown in CLI
 - **Weekly cap** — introduced Aug 2025 to prevent 24/7 background usage
-- Capacity: ~480 Sonnet hours/week or ~40 Opus hours/week on Max 20x
+- Capacity (Max 5x): ~120 Sonnet hours/week or ~10 Opus hours/week *(estimated — 1/4 of Max 20x)*
 - All Claude.ai + Claude Code activity shares one usage bucket
 - When either limit hits, all new prompts are blocked immediately
 - **Extra usage** can be purchased at API rates once the included limit is hit
 
-**Practical concurrent capacity** (estimated for Max 20x):
-- 3-5 concurrent CLI `-p` sessions (Sonnet) = sustainable for a full workday
-- 1-2 concurrent CLI `-p` sessions (Opus) = sustainable but burns weekly cap faster
-- 3-5 concurrent Teleport `&` web sessions = sustainable (cloud-side, same bucket)
-- Mixed: 2x CLI `-p` + 3x Teleport = sweet spot for most days
+**Practical concurrent capacity** (estimated for Max 5x):
+- 1-2 concurrent CLI `-p` sessions (Sonnet) = sustainable for a full workday
+- 1 CLI `-p` session (Opus) = careful, burns weekly cap fast
+- 1-2 concurrent Teleport `&` web sessions = sustainable (same bucket)
+- Mixed: 1x CLI `-p` + 1x Teleport = safe daily sweet spot
+- **Avoid**: 3+ concurrent sessions — will hit 5-hour limit quickly on 5x
 
-**Decision: Adaptive routing with soft limits**
+**Key constraint on Max 5x**: Parallelism is limited. This plan rewards **sequential, focused work** over multi-session spray. Reserve parallelism for genuinely independent tasks where waiting would waste operator time.
+
+**Decision: Conservative adaptive routing (Max 5x baseline)**
 
 ```
 OpenClaw tracks its own usage estimate:
   - Each CLI -p invocation: log start time, model, estimated tokens
   - Each Teleport &: log send time, assume ~15 min Sonnet session
 
-When estimated 5-hour usage > 70% of Max 20x allowance:
-  → Switch new tasks to Sonnet (if currently using Opus)
-  → Queue non-urgent tasks for next 5-hour window
-  → Alert operator: "Approaching rate limit, queueing low-priority tasks"
+NORMAL MODE (Max 5x — default):
+  Max concurrent sessions: 2 (soft limit)
+  Prefer Sonnet over Opus unless task explicitly needs reasoning depth
+  Queue tasks if 2 sessions already active
 
-When estimated 5-hour usage > 90%:
+When estimated 5-hour usage > 60% of Max 5x allowance:
+  → Switch to Sonnet-only (no Opus)
+  → Reduce to max 1 concurrent session
+  → Alert operator: "At 60% of 5-hour limit, serializing tasks"
+
+When estimated 5-hour usage > 85%:
   → Route urgent tasks to Agent SDK (overflow, API tokens)
   → Hold everything else until next reset
   → Alert operator: "Rate limit imminent, using API tokens for urgent work"
 
-When weekly limit > 80%:
-  → Reduce parallelism (max 2 concurrent sessions)
-  → Prefer Sonnet over Opus for remaining capacity
-  → Alert operator: "Weekly limit at 80%, throttling to conserve"
+When weekly limit > 70%:
+  → Sonnet-only, 1 session max, no Teleport
+  → Alert operator: "Weekly limit at 70%. Consider upgrading to Max 20x."
+
+UPGRADED MODE (Max 20x — if/when upgraded):
+  Max concurrent sessions: 5 (soft limit)
+  Opus available freely
+  Thresholds shift to 70% / 90% / 80% (more headroom)
 ```
 
+**Upgrade trigger**: If OpenClaw hits the weekly cap more than 2 weeks in a row, or if the operator is regularly waiting for rate limit resets, it's time to upgrade to Max 20x ($200/mo). The jump from 5x → 20x is a 4× capacity increase for only 2× cost — strong ROI if usage justifies it.
+
 This is a **soft estimation** — Anthropic doesn't expose exact token counts via CLI, so OpenClaw tracks wall-clock time × model tier as a proxy. Empirical calibration needed in Phase 1.
+
+#### Strategic Upgrade Path: Max 5x → Max 20x
+
+| Signal | Action |
+|--------|--------|
+| Weekly limit hit 0-1 times/month | Stay on Max 5x. Plenty of headroom. |
+| Weekly limit hit 2+ times/month | Consider Max 20x. You're leaving productivity on the table. |
+| SDK overflow > $50/month | **Upgrade immediately.** Max 20x ($200/mo) is cheaper than 5x ($100) + $50+ SDK overflow. |
+| Need 3+ parallel sessions regularly | Upgrade. Max 5x can't sustain this. |
+| Operator waiting for resets > 30 min/week | Upgrade. Time cost exceeds the $100/mo difference. |
+
+**Bottom line**: Start on Max 5x, measure real usage in Phase 1, and let the data tell you when to upgrade. Don't pre-optimize for Max 20x capacity you might not need.
 
 ---
 
@@ -1099,7 +1125,7 @@ This is a **soft estimation** — Anthropic doesn't expose exact token counts vi
 | Method | Auto-route? | Rationale |
 |--------|-------------|-----------|
 | CLI `-p` (Sonnet) | **Yes, always** | Low cost, fast, reversible. No reason to ask. |
-| CLI `-p` (Opus) | **Yes, with notification** | Higher token burn, but still $0. Notify operator which model was chosen. |
+| CLI `-p` (Opus) | **Yes, with notification** | Higher token burn, still $0 but eats Max 5x budget fast. Notify operator. On Max 5x, prefer Sonnet unless task needs deep reasoning. |
 | Teleport `&` | **Yes, always** | Fire-and-forget by design. Operator gets notified when complete. |
 | Remote Control | **No — operator must request** | Human-in-loop by definition. Operator says "walk me through it." |
 | Claude Desktop | **No — operator must request** | GUI mode, operator initiates. |
