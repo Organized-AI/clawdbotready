@@ -1042,24 +1042,210 @@ maxTurns: 20
 
 ---
 
-## Open Questions
+## Open Questions — DECIDED
 
-1. ~~**API key vs subscription**~~ → **DECIDED: Max plan first, SDK as overflow only.**
+### 1. ~~API key vs subscription~~ → **DECIDED: Max plan first, SDK as overflow only.**
 
-2. **Rate limit awareness**: What are the Max plan's actual rate limits for CLI `-p` and Teleport? Need to measure empirically to know when SDK fallback is needed. Current best guess: ~5 concurrent sessions.
+See "Strategic Approach: Max Plan First" section above.
 
-3. **Autonomy level**: Should OpenClaw auto-route tasks, or propose the method and let the operator approve? Recommendation: auto-route for Tier 1 methods, ask for Tier 2+.
+---
 
-4. **Session persistence**: CLI `-p` sessions can be resumed via `--resume`. Should OpenClaw auto-persist all sessions for audit/replay? Storage cost vs auditability tradeoff.
+### 2. ~~Rate limit awareness~~ → **DECIDED: Empirical measurement + adaptive routing.**
 
-5. **Repo scoping**: Which repos should CLI `-p` have access to? Options:
-   - All repos on the Mac (most capable, highest risk)
-   - Scoped list in config (balanced)
-   - Only the current project directory (safest, most limiting)
+**What we know** (as of March 2026):
+- Max 20x ($200/mo) = 20× Pro's token allowance
+- **5-hour rolling window** — resets every 5 hours, countdown shown in CLI
+- **Weekly cap** — introduced Aug 2025 to prevent 24/7 background usage
+- Capacity: ~480 Sonnet hours/week or ~40 Opus hours/week on Max 20x
+- All Claude.ai + Claude Code activity shares one usage bucket
+- When either limit hits, all new prompts are blocked immediately
+- **Extra usage** can be purchased at API rates once the included limit is hit
 
-6. **Teleport polling interval**: How often should OpenClaw poll `/tasks` for cloud session completion? Too fast = noise. Too slow = delayed results. Candidates: 30s, 60s, 5min.
+**Practical concurrent capacity** (estimated for Max 20x):
+- 3-5 concurrent CLI `-p` sessions (Sonnet) = sustainable for a full workday
+- 1-2 concurrent CLI `-p` sessions (Opus) = sustainable but burns weekly cap faster
+- 3-5 concurrent Teleport `&` web sessions = sustainable (cloud-side, same bucket)
+- Mixed: 2x CLI `-p` + 3x Teleport = sweet spot for most days
 
-7. **Branch cleanup**: Teleport creates a new branch per cloud session. Automated cleanup policy needed — delete after merge? After 7 days? Never?
+**Decision: Adaptive routing with soft limits**
+
+```
+OpenClaw tracks its own usage estimate:
+  - Each CLI -p invocation: log start time, model, estimated tokens
+  - Each Teleport &: log send time, assume ~15 min Sonnet session
+
+When estimated 5-hour usage > 70% of Max 20x allowance:
+  → Switch new tasks to Sonnet (if currently using Opus)
+  → Queue non-urgent tasks for next 5-hour window
+  → Alert operator: "Approaching rate limit, queueing low-priority tasks"
+
+When estimated 5-hour usage > 90%:
+  → Route urgent tasks to Agent SDK (overflow, API tokens)
+  → Hold everything else until next reset
+  → Alert operator: "Rate limit imminent, using API tokens for urgent work"
+
+When weekly limit > 80%:
+  → Reduce parallelism (max 2 concurrent sessions)
+  → Prefer Sonnet over Opus for remaining capacity
+  → Alert operator: "Weekly limit at 80%, throttling to conserve"
+```
+
+This is a **soft estimation** — Anthropic doesn't expose exact token counts via CLI, so OpenClaw tracks wall-clock time × model tier as a proxy. Empirical calibration needed in Phase 1.
+
+---
+
+### 3. ~~Autonomy level~~ → **DECIDED: Auto-route Tier 1, confirm Tier 2+, override available.**
+
+| Method | Auto-route? | Rationale |
+|--------|-------------|-----------|
+| CLI `-p` (Sonnet) | **Yes, always** | Low cost, fast, reversible. No reason to ask. |
+| CLI `-p` (Opus) | **Yes, with notification** | Higher token burn, but still $0. Notify operator which model was chosen. |
+| Teleport `&` | **Yes, always** | Fire-and-forget by design. Operator gets notified when complete. |
+| Remote Control | **No — operator must request** | Human-in-loop by definition. Operator says "walk me through it." |
+| Claude Desktop | **No — operator must request** | GUI mode, operator initiates. |
+| Agent SDK | **Yes, but only as overflow** | Only triggers when Max plan limits are hit. Notify operator with cost estimate. |
+
+**Override mechanism**: Operator can force a method by prefixing their message:
+```
+"!local Fix the login bug"      → Forces CLI -p (even if router would pick Teleport)
+"!cloud Add 2FA support"        → Forces Teleport & (even for quick tasks)
+"!watch Refactor the auth flow"  → Forces Remote Control
+"!sdk Run 10 parallel analyses"  → Forces Agent SDK (operator accepts cost)
+```
+
+Without a prefix, the router auto-selects based on the decision tree in the Architecture section.
+
+---
+
+### 4. ~~Session persistence~~ → **DECIDED: Persist all, auto-prune at 30 days.**
+
+**What's stored**: Claude Code sessions live as JSONL in `~/.claude/projects/` with directory paths encoded. They store full conversation history, tool calls, and context state.
+
+**Decision**:
+- **Persist every session** — CLI `-p` (via `--resume` ID), Teleport (via session ID from `/tasks`), SDK (via SDK response objects)
+- **Log metadata** to OpenClaw's own session ledger (`logs/session-ledger.jsonl`):
+  ```jsonl
+  {"id":"sess_abc123","method":"cli-p","model":"sonnet","start":"2026-03-05T10:00:00Z","end":"2026-03-05T10:03:22Z","task":"Fix login bug","outcome":"success","branch":"fix/login-bug","tokens_est":15000}
+  ```
+- **Auto-prune**: Delete JSONL session files older than 30 days. Keep the ledger entry permanently (it's just metadata, tiny).
+- **Resume capability**: OpenClaw can `claude --resume <session-id>` to continue a previous session if follow-up work is needed. This is powerful for multi-turn tasks that span hours or days.
+
+**Why persist everything?**
+- Audit trail for what the AI did and when
+- Resume capability for multi-turn work
+- Usage pattern analysis (feeds into the `gateway-insights` skill)
+- Debugging failed sessions
+- Storage cost is negligible (~1-5 MB per session, pruned at 30 days)
+
+---
+
+### 5. ~~Repo scoping~~ → **DECIDED: Scoped list in config, expandable by operator.**
+
+**Decision: Config-defined allowlist with operator override.**
+
+```bash
+# ~/.config/openclaw/repo-scope.json
+{
+  "allowed_repos": [
+    "/Users/operator/clawdbotready",
+    "/Users/operator/openclaw-gateway",
+    "/Users/operator/client-project-alpha"
+  ],
+  "default_repo": "/Users/operator/clawdbotready",
+  "allow_operator_override": true
+}
+```
+
+**Rules**:
+- CLI `-p` sessions receive `--cwd <repo-path>` scoped to the allowed list
+- If a task mentions a repo not in the list, OpenClaw asks the operator before proceeding
+- Operator can add repos on-the-fly: `"!scope add /Users/operator/new-project"`
+- Teleport `&` sessions clone from GitHub — scoped by which repos the Claude.ai account has access to (GitHub OAuth)
+
+**Why not "all repos on the Mac"?**
+- An autonomous AI agent with access to every directory on the machine is an unnecessary blast radius
+- A compromised session could read/modify unrelated projects
+- Scoped list + operator override gives full flexibility with defense in depth
+
+**Why not "current project only"?**
+- OpenClaw serves multiple projects (client work, internal tools, etc.)
+- Forcing single-project mode would require constant reconfiguration
+- The operator already trusts OpenClaw with these repos — just make it explicit
+
+---
+
+### 6. ~~Teleport polling interval~~ → **DECIDED: Adaptive polling — 30s → 60s → 5min.**
+
+Cloud sessions vary wildly in duration (30 seconds for a quick fix, 45 minutes for a refactor). Fixed polling wastes either resources or time.
+
+**Decision: Exponential backoff with a ceiling.**
+
+```
+Session sent via & at T=0
+
+T+0 to T+2min:   Poll every 30s  (6 polls — catches quick tasks)
+T+2min to T+10min: Poll every 60s  (8 polls — catches medium tasks)
+T+10min onward:   Poll every 5min (ongoing — catches long-running tasks)
+
+Total polls for a 30-min session: ~14 (minimal overhead)
+Total polls for a 2-hour session: ~28
+```
+
+**On completion detection**:
+- OpenClaw teleports the session back immediately
+- Runs post-processing (tests, PR creation)
+- Notifies the operator with results
+
+**On timeout** (configurable, default 4 hours):
+- OpenClaw alerts: "Cloud session `sess_abc` has been running for 4 hours. Should I cancel it?"
+- Operator can extend, cancel, or check the web UI manually
+
+**Future optimization**: If Anthropic adds webhook/push notification support for `/tasks` completion, switch to event-driven and eliminate polling entirely.
+
+---
+
+### 7. ~~Branch cleanup~~ → **DECIDED: Auto-delete after merge, warn at 7 days, force-clean at 30 days.**
+
+Teleport creates a branch per cloud session. Without cleanup, the remote accumulates stale branches fast.
+
+**Decision: Three-tier lifecycle.**
+
+| Age | Status | Action |
+|-----|--------|--------|
+| 0-7 days | Active | Keep. Operator may still be reviewing. |
+| 7 days | Unmerged | Warn operator: "Branch `teleport/fix-auth-abc` is 7 days old and unmerged. Keep or delete?" |
+| 30 days | Unmerged | Auto-delete remote branch. Log deletion. Operator can recover from local reflog if needed. |
+| Any | Merged | Auto-delete remote branch immediately after merge confirmation. |
+
+**Implementation**:
+```bash
+# Daily cleanup job (OpenClaw cron or scheduled task)
+# 1. List all teleport/* branches
+# 2. Check merge status against main
+# 3. Delete merged branches
+# 4. Warn on 7-day unmerged
+# 5. Force-delete 30-day unmerged (with logging)
+
+git branch -r --merged main | grep 'teleport/' | xargs -I{} git push origin --delete {}
+```
+
+**Branch naming convention** (enforced by Teleport skill):
+```
+teleport/<task-slug>-<short-session-id>
+# Examples:
+teleport/fix-login-bug-abc12
+teleport/add-2fa-support-def34
+teleport/security-audit-ghi56
+```
+
+This makes branches self-documenting and easy to identify in `git branch -r` output.
+
+**Local worktree cleanup** (for Pattern D):
+```bash
+# After teleport-back and merge, clean up the worktree
+git worktree remove ../teleport-work --force
+git worktree prune
+```
 
 ---
 
