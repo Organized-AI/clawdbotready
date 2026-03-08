@@ -95,26 +95,26 @@ Paperclip acts as the control plane. Each OpenClaw Gateway instance registers as
 ### Phase 1: Register OpenClaw as a Paperclip Agent
 **Goal**: Connect OpenClaw Gateway to Paperclip's agent registry.
 
-Paperclip supports a "Bring Your Own Agent" model. OpenClaw can be registered as an agent type with its own capabilities and constraints.
+Paperclip has a **first-class `openclaw_gateway` adapter** built into its codebase. This is not a generic "bring your own agent" scenario — Paperclip was designed with OpenClaw as a primary integration target.
+
+**How the Built-in Adapter Works**:
+- Paperclip connects to OpenClaw via **WebSocket** (`ws://` or `wss://`) on the control plane port
+- Uses a **device pairing** handshake with authentication tokens (minimum 16 chars)
+- Auto-pairing with retry on first "pairing required" response; falls back to manual OpenClaw approval
+- Heartbeat-driven: Paperclip sends scheduled heartbeats, OpenClaw agent determines its own behavior per cycle
+- **Skill injection**: Paperclip injects a "Paperclip Skill" (via `SKILL.md`) that teaches the agent how to interact with the control plane — task CRUD, status/cost reporting, company context, inter-agent communication rules
 
 **Steps**:
 1. Create a Paperclip "company" for the deployment
-2. Define an agent type for OpenClaw Gateway:
-   - Capabilities: messaging, tool execution, multi-channel
-   - Budget constraints: token limits per model
-   - Reporting structure: who this agent reports to
-3. Register the running OpenClaw instance as an agent
-4. Configure the connection method (HTTP or WebSocket to OpenClaw's control plane on `localhost:18789`)
-5. Verify Paperclip can reach and interact with the agent
+2. From company settings, generate an **OpenClaw Invite Prompt** (restricted to board users with invite permissions or the CEO agent)
+3. Configure the `openclaw_gateway` adapter pointing to `ws://localhost:18789`
+4. Complete the device pairing handshake (auto-pairing or manual approval in OpenClaw)
+5. Verify the agent is connected and receiving heartbeats
+6. Define agent role, capabilities, and reporting structure in the org chart
 
-**Key Decision**: Paperclip communicates with agents via HTTP endpoints or CLI commands. We need to either:
-- **Option A**: Use OpenClaw's WebSocket control plane directly (requires a thin adapter)
-- **Option B**: Use HTTP bridge — a lightweight Express server that translates Paperclip HTTP calls to OpenClaw WebSocket commands
-- **Option C**: Register OpenClaw as a CLI-based agent (Paperclip executes `openclaw` CLI commands)
+**No custom adapter needed** — the WebSocket integration, pairing flow, and skill injection are all built into Paperclip.
 
-**Recommendation**: Start with **Option C** (CLI-based) for simplicity, migrate to **Option A** for production.
-
-**Validation**: Paperclip dashboard shows OpenClaw agent as online. Can dispatch a simple task and see it execute.
+**Validation**: Paperclip dashboard shows OpenClaw agent as online. Heartbeats are flowing. Can dispatch a simple task and see it execute.
 
 ---
 
@@ -263,29 +263,26 @@ Cloud (Vercel/Railway)            Mac Mini Farm
 
 ---
 
-## Integration Code: Agent Adapter (Phase 1)
+## Integration: Built-in Adapter (Phase 1)
 
-A thin adapter script is needed to bridge Paperclip's agent protocol with OpenClaw's control plane. The initial CLI-based approach:
+**No custom adapter code is needed.** Paperclip ships with a dedicated `openclaw_gateway` adapter that handles:
 
-```bash
-#!/usr/bin/env bash
-# openclaw-paperclip-adapter.sh
-# Bridges Paperclip task dispatch to OpenClaw Gateway execution
-set -euo pipefail
+- WebSocket connection management (`ws://` / `wss://`)
+- Device authentication and pairing handshake
+- Heartbeat scheduling and dispatch
+- Skill injection via `SKILL.md` (teaches agent the Paperclip control plane API)
+- Status polling and cancellation
 
-TASK_ID="$1"
-TASK_PAYLOAD="$2"
-OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
+The adapter implements three core methods: `invoke()`, `status()`, and `cancel()`.
 
-# Execute task via OpenClaw CLI
-result=$(openclaw execute --task "$TASK_PAYLOAD" --format json 2>&1)
-exit_code=$?
+**Connection string format**: Agents receive a connection string containing server URL, API key, and auth instructions. JWT-based agent auth handles the rest.
 
-# Report result back to Paperclip
-echo "{\"task_id\": \"$TASK_ID\", \"exit_code\": $exit_code, \"output\": $(echo "$result" | jq -Rs .)}"
-```
-
-This will evolve into a proper TypeScript adapter in Phase 5 for WebSocket-native integration.
+**What you configure** (not code):
+1. Adapter type: `openclaw_gateway`
+2. WebSocket URL: `ws://localhost:18789` (or via SSH tunnel)
+3. Auth token: minimum 16 characters
+4. Heartbeat interval: configurable schedule
+5. Agent role and budget constraints
 
 ---
 
